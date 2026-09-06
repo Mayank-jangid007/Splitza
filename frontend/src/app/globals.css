@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import '../styles/themes.css' layer(base);
+@import '../styles/globals.css' layer(base);
+@import '../styles/components.css' layer(components);
+
+@theme {
+  --animate-marquee-up: marquee-up var(--marquee-duration, 24s) linear infinite;
+  --animate-marquee-down: marquee-down var(--marquee-duration, 24s) linear infinite;
+
+  @keyframes marquee-up {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
+  @keyframes marquee-down {
+    from {
+      transform: translateY(-50%);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ── View Transition: circle-reveal theme toggle ─────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
