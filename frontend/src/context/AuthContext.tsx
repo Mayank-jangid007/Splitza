@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (data: { name: string; email: string; phone?: string; password: string; role: "HOST" | "MEMBER" }) => {
+    async (data: { name: string; email: string; phone?: string; password: string; role: "HOST" | "COHOST" }) => {
       const res = await authApi.register(data);
       // Don't set token yet — user still needs to verify OTP
       setState((s) => ({ ...s, user: res.data.user }));
@@ -144,11 +144,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.data.user;
   }, []);
 
-  const resendOtp = useCallback(async (identifier: string) => {
+  const resendOtp = useCallback(async (identifier: string): Promise<void> => {
     await authApi.resendOtp(identifier);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async (): Promise<void> => {
     // Fire and forget API call for instant UI response
     authApi.logout().catch(e => {
       console.warn("Logout API failed", e);

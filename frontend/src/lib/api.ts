@@ -240,6 +240,7 @@ export type Pool = {
   status: string;
   visibility?: "PUBLIC" | "PRIVATE";
   planMonths: number;
+  startDate?: string; // ISO string — for daysLeft calculation
 };
 
 export type MarketplacePoolItem = {

@@ -8,10 +8,11 @@ import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { MarketplaceView, type MarketplacePool } from "@/components/marketplace-view";
 import { JoinPage } from "@/components/join-page";
 import { poolsApi, type Pool } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { resolveLogoUrl } from "@/lib/logos";
 import {
   HostPlanDetails,
   ServiceCard,
-  defaultServices,
   type Service,
 } from "@/components/hosted-plans";
 import {
@@ -27,6 +28,7 @@ import {
 
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [dark, setDark] = useState(true);
   const [search, setSearch] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [activeShareService, setActiveShareService] = useState<Service | null>(null);
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPools = async () => {
@@ -54,17 +57,10 @@ export default function Dashboard() {
             filled: p.filledSeats || 0,
             private: p.visibility === "PRIVATE",
             brand: poolName.substring(0, 2).toUpperCase(),
-            logoUrl: (
-              {
-                "netflix": "https://cdn.simpleicons.org/netflix/E50914",
-                "spotify": "https://cdn.simpleicons.org/spotify/1ED760",
-                "youtube": "https://cdn.simpleicons.org/youtube/FF0000",
-                "apple": "https://cdn.simpleicons.org/apple/000000",
-                "canva": "https://cdn.simpleicons.org/canva/00C4CC",
-              } as Record<string, string>
-            )[Object.keys({netflix:1,spotify:1,youtube:1,apple:1,canva:1}).find(k => poolName.toLowerCase().includes(k)) || ""],
+            logoUrl: resolveLogoUrl(null, poolName) ?? undefined,
             accent: p.visibility === "PRIVATE" ? "bg-violet-400" : "bg-emerald-400",
             planMonths: p.planMonths,
+            startDate: p.startDate,
           };
         };
 
@@ -113,7 +109,8 @@ export default function Dashboard() {
       if (details.isPrivate) setActiveShareService(newService);
     } catch (e) {
       console.error("Failed to create plan:", e);
-      alert("Failed to create plan on backend.");
+      setCreateError("Failed to create plan. Please try again.");
+      setTimeout(() => setCreateError(null), 4000);
     } finally {
       setIsCreating(false);
     }
@@ -320,7 +317,7 @@ export default function Dashboard() {
           <h1 className="mt-5 font-mono text-[clamp(54px,9vw,118px)] font-black uppercase leading-[0.82] tracking-[-0.1em]">
             Welcome back,
             <br />
-            <em className="not-italic text-amber-300">Arjun.</em>
+          <em className="not-italic text-amber-300">{user?.name?.split(" ")[0] ?? "Friend"}.</em>
           </h1>
 
           <p className="mt-7 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">
@@ -470,7 +467,15 @@ export default function Dashboard() {
         </section>
       )}
 
+      {/* Error toast */}
+      {createError && (
+        <div className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 rounded-xl border-2 border-red-400 bg-red-950 px-5 py-3 font-mono text-sm font-black text-red-300 shadow-[4px_4px_0_#f87171]">
+          ⚠ {createError}
+        </div>
+      )}
+
       {/* Private pool popup */}
+
       {activeShareService && (
         <div className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/75 px-4 py-6 backdrop-blur-md">
           <section

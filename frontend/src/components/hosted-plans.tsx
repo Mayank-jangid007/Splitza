@@ -6,7 +6,6 @@ import {
   Minus,
   RefreshCcw,
   Send,
-  Share2,
   ShieldCheck,
   UserPlus,
   XCircle,
@@ -23,34 +22,11 @@ export type Service = {
   logoUrl?: string;
   accent: string;
   planMonths: number;
+  startDate?: string; // ISO string — used to calculate days remaining
 };
 
-export const defaultServices: Service[] = [
-  {
-    name: "Netflix Premium 4K",
-    host: "Arjun Mehta",
-    price: 162,
-    capacity: 4,
-    filled: 3,
-    private: true,
-    brand: "N",
-    logoUrl: "https://cdn.simpleicons.org/netflix/E50914",
-    accent: "bg-red-600",
-    planMonths: 1,
-  },
-  {
-    name: "Spotify Family",
-    host: "Maya Kapoor",
-    price: 48,
-    capacity: 6,
-    filled: 5,
-    private: false,
-    brand: "S",
-    logoUrl: "https://cdn.simpleicons.org/spotify/1ED760",
-    accent: "bg-emerald-400",
-    planMonths: 3,
-  },
-];
+
+
 
 export function ServiceCard({
   service,
@@ -198,7 +174,11 @@ export function HostPlanDetails({
   const totalRecoveredFromMembers =
     service.price * Math.max(service.filled - 1, 0) * service.planMonths;
   const totalPlanDays = service.planMonths * 30;
-  const daysLeft = Math.max(0, totalPlanDays - 12);
+  // Calculate elapsed days from startDate if available, otherwise estimate as 0
+  const elapsedDays = service.startDate
+    ? Math.floor((Date.now() - new Date(service.startDate).getTime()) / 86_400_000)
+    : 0;
+  const daysLeft = Math.max(0, totalPlanDays - elapsedDays);
   const endDate = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",

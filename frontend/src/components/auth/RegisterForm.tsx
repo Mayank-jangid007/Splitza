@@ -58,7 +58,7 @@ export default function RegisterForm() {
         email: form.email,
         phone: form.phone || undefined,
         password: form.password,
-        role: "MEMBER", // default role; can be upgraded later
+        role: "COHOST", // default role for new users joining groups
       });
       sessionStorage.setItem("splitza_otp_identifier", form.email);
       router.push("/auth/verify-otp");

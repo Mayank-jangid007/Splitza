@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Check, Search, SearchX, Clapperboard, Cloud, GraduationCap, Headphones, Gamepad2, CircleEllipsis, Loader2 } from "lucide-react"
 import { motion } from "motion/react"
 import { poolsApi, type MarketplacePoolItem } from "@/lib/api"
+import { resolveLogoUrl } from "@/lib/logos"
 
 // ─── MarketplacePool — internal type used across views ───────────────────────
 export type MarketplacePool = {
@@ -19,30 +20,6 @@ export type MarketplacePool = {
   remainingDays: number
   hostName: string
   logoUrl: string | null
-}
-
-// ─── Logo map ─────────────────────────────────────────────────────────────────
-const LOGO_MAP: Record<string, string> = {
-  netflix:   "https://cdn.simpleicons.org/netflix/E50914",
-  spotify:   "https://cdn.simpleicons.org/spotify/1ED760",
-  youtube:   "https://cdn.simpleicons.org/youtube/FF0000",
-  apple:     "https://cdn.simpleicons.org/apple/000000",
-  canva:     "https://cdn.simpleicons.org/canva/00C4CC",
-  prime:     "https://cdn.simpleicons.org/amazonaws/FF9900",
-  amazon:    "https://cdn.simpleicons.org/amazonaws/FF9900",
-  disney:    "https://cdn.simpleicons.org/disneyplus/006E99",
-  hotstar:   "https://cdn.simpleicons.org/disneyplus/006E99",
-  microsoft: "https://cdn.simpleicons.org/microsoft/00A4EF",
-  adobe:     "https://cdn.simpleicons.org/adobe/FF0000",
-}
-
-function resolveLogoUrl(platformLogoUrl: string | null, name: string): string | null {
-  if (platformLogoUrl) return platformLogoUrl
-  const lower = name.toLowerCase()
-  for (const [key, url] of Object.entries(LOGO_MAP)) {
-    if (lower.includes(key)) return url
-  }
-  return null
 }
 
 // ─── Category detection ───────────────────────────────────────────────────────
