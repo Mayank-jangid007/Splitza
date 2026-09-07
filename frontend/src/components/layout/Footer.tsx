@@ -25,26 +25,38 @@ export default function Footer() {
   };
 
   return (
-    <footer className="footer" role="contentinfo">
-      <div className="container">
-        <div className="footer-grid">
-          {/* Brand */}
-          <div className="footer-brand">
-            <div className="footer-logo">
+    <footer
+      className="bg-white border-t border-gray-200 pt-16 pb-8"
+      role="contentinfo"
+    >
+      <div className="container mx-auto px-4 max-w-7xl">
+
+        {/* Main grid */}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr] md:grid-cols-2">
+
+          {/* Brand — full width on tablet */}
+          <div className="flex flex-col gap-4 md:col-span-2 lg:col-span-1">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
               <div className="navbar-logo-icon">S</div>
               <span className="navbar-logo-text">Splitza</span>
             </div>
-            <p className="footer-tagline">
-              India&apos;s first automated subscription-sharing marketplace with escrow protection and UPI AutoPay.
+
+            {/* Tagline */}
+            <p className="text-[0.9rem] text-gray-500 leading-relaxed max-w-[280px]">
+              India&apos;s first automated subscription-sharing marketplace with
+              escrow protection and UPI AutoPay.
             </p>
-            <div className="footer-badges">
-              <div className="footer-badge">
+
+            {/* Badges */}
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center gap-2 text-[0.8125rem] font-semibold text-emerald-500 w-fit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
                 </svg>
                 Escrow Protected
               </div>
-              <div className="footer-badge">
+              <div className="inline-flex items-center gap-2 text-[0.8125rem] font-semibold text-emerald-500 w-fit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -53,14 +65,21 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Link columns */}
           {Object.entries(links).map(([category, items]) => (
-            <div key={category} className="footer-links-col">
-              <h3 className="footer-col-title">{category}</h3>
-              <ul role="list">
+            <div key={category} className="flex flex-col gap-4">
+              <h3 className="text-sm font-bold tracking-[0.05em] uppercase text-gray-900">
+                {category}
+              </h3>
+              <ul role="list" className="flex flex-col gap-3">
                 {items.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="footer-link">{link.label}</Link>
+                    <Link
+                      href={link.href}
+                      className="text-[0.9rem] text-gray-500 no-underline transition-colors duration-200 hover:text-emerald-500"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -69,20 +88,26 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="divider" style={{ margin: "var(--space-8) 0" }} />
+        <div className="my-8 h-px bg-gray-200" />
 
         {/* Bottom bar */}
-        <div className="footer-bottom">
-          <p className="text-body-sm text-muted">
+        <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+          <p className="text-sm text-gray-500">
             © {year} Splitza Technologies Pvt. Ltd. All rights reserved. · Made with ❤️ in India
           </p>
-          <div className="footer-socials">
+          <div className="flex gap-2">
             {[
               { label: "Twitter/X", icon: "𝕏", href: "#" },
               { label: "LinkedIn", icon: "in", href: "#" },
               { label: "Instagram", icon: "IG", href: "#" },
             ].map((s) => (
-              <a key={s.label} href={s.href} className="footer-social-btn" aria-label={s.label} id={`footer-${s.label.toLowerCase().replace("/", "-")}`}>
+              <a
+                key={s.label}
+                href={s.href}
+                aria-label={s.label}
+                id={`footer-${s.label.toLowerCase().replace("/", "-")}`}
+                className="flex size-9 items-center justify-center rounded-md border border-gray-200 bg-gray-100 text-[0.8125rem] font-bold text-gray-500 no-underline transition-all duration-200 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+              >
                 {s.icon}
               </a>
             ))}
@@ -90,89 +115,13 @@ export default function Footer() {
         </div>
 
         {/* Disclaimer */}
-        <p className="footer-disclaimer">
-          Splitza is not affiliated with Netflix, Spotify, YouTube, or any other mentioned service. We facilitate cost-sharing between users in compliance with applicable Indian laws. Escrow services are provided by our licensed payment partner.
+        <p className="mt-6 border-t border-gray-200 pt-6 text-xs leading-relaxed text-gray-400">
+          Splitza is not affiliated with Netflix, Spotify, YouTube, or any other
+          mentioned service. We facilitate cost-sharing between users in
+          compliance with applicable Indian laws. Escrow services are provided
+          by our licensed payment partner.
         </p>
       </div>
-
-      <style>{`
-        .footer {
-          background: var(--color-surface);
-          border-top: 1px solid var(--color-border);
-          padding: var(--space-16) 0 var(--space-8);
-        }
-        .footer-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1fr;
-          gap: var(--space-10);
-        }
-        .footer-brand { display: flex; flex-direction: column; gap: var(--space-4); }
-        .footer-logo { display: flex; align-items: center; gap: var(--space-3); }
-        .footer-tagline { font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.6; max-width: 280px; }
-        .footer-badges { display: flex; flex-direction: column; gap: var(--space-2); }
-        .footer-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-2);
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: var(--color-accent);
-          width: fit-content;
-        }
-        .footer-links-col { display: flex; flex-direction: column; gap: var(--space-4); }
-        .footer-col-title {
-          font-family: var(--font-heading);
-          font-size: 0.875rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          color: var(--color-text-primary);
-        }
-        .footer-links-col ul { display: flex; flex-direction: column; gap: var(--space-3); }
-        .footer-link {
-          font-size: 0.9rem;
-          color: var(--color-text-muted);
-          transition: color 0.2s ease;
-          text-decoration: none;
-        }
-        .footer-link:hover { color: var(--color-accent); }
-        .footer-bottom {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: var(--space-4);
-        }
-        .footer-socials { display: flex; gap: var(--space-2); }
-        .footer-social-btn {
-          width: 36px; height: 36px;
-          border-radius: var(--radius-md);
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.8125rem;
-          font-weight: 700;
-          color: var(--color-text-secondary);
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-        .footer-social-btn:hover { background: var(--color-accent); color: white; border-color: var(--color-accent); }
-        .footer-disclaimer {
-          margin-top: var(--space-6);
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          line-height: 1.6;
-          border-top: 1px solid var(--color-border);
-          padding-top: var(--space-6);
-        }
-        @media (max-width: 1024px) {
-          .footer-grid { grid-template-columns: 1fr 1fr; }
-          .footer-brand { grid-column: 1 / -1; }
-        }
-        @media (max-width: 600px) {
-          .footer-grid { grid-template-columns: 1fr; }
-          .footer-bottom { flex-direction: column; text-align: center; }
-        }
-      `}</style>
     </footer>
   );
 }
