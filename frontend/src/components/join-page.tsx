@@ -16,16 +16,16 @@ export function JoinPage({ pool, dark, onBack }: { pool: MarketplacePool; dark: 
     return () => window.clearInterval(timer)
   }, [isPaymentStep, submitted])
 
-  const minutes          = String(Math.floor(seconds / 60)).padStart(2, "0")
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, "0")
   const remainingSeconds = String(seconds % 60).padStart(2, "0")
-  const surface          = dark ? "border-white bg-black" : "border-black bg-[#F7F4EC]"
-  const muted            = dark ? "text-neutral-400" : "text-neutral-600"
-  const accent           = dark ? "#D9F9DF" : "#9FA1FF"
+  const surface = dark ? "border-white bg-black" : "border-black bg-[#F7F4EC]"
+  const muted = dark ? "text-neutral-400" : "text-neutral-600"
+  const accent = dark ? "#D9F9DF" : "#9FA1FF"
 
-  const dailyRate  = Math.round(pool.price / (pool.term * 30))
-  const fairPrice  = dailyRate * pool.remainingDays
+  const dailyRate = Math.round(pool.price / (pool.term * 30))
+  const fairPrice = dailyRate * pool.remainingDays
 
-  // ── Confirmed screen ──────────────────────────────────────────────────────
+  // ── Confirmed screen ─────
   if (submitted) {
     return (
       <main className={`min-h-screen px-4 py-8 font-sans ${dark ? "bg-black text-white" : "bg-[#F7F4EC] text-neutral-950"}`}>
@@ -95,9 +95,9 @@ export function JoinPage({ pool, dark, onBack }: { pool: MarketplacePool; dark: 
             {/* Stats */}
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {[
-                ["Total seats",    `${pool.total}`,   `${pool.available} available`],
-                ["Plan duration",  `${pool.term} mo`, "Fixed term"],
-                ["Upfront split",  `₹${pool.price}`,  "Due at checkout"],
+                ["Total seats", `${pool.total}`, `${pool.available} available`],
+                ["Plan duration", `${pool.term} mo`, "Fixed term"],
+                ["Upfront split", `₹${pool.price}`, "Due at checkout"],
               ].map(([label, val, sub]) => (
                 <div key={label} className={`rounded-xl border-2 p-4 ${surface}`}>
                   <p className={`font-mono text-[10px] font-black uppercase tracking-widest ${muted}`}>{label}</p>
