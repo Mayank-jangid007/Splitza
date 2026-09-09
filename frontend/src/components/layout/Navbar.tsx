@@ -45,22 +45,22 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`} role="navigation" aria-label="Main navigation">
+      <nav className={`fixed inset-x-0 top-0 z-[100] bg-[var(--navbar-bg)] border-b border-transparent transition-all duration-300 p-0 ${scrolled ? "border-b-[var(--navbar-border)] backdrop-blur-[24px] shadow-[var(--shadow-sm)]" : ""}`} role="navigation" aria-label="Main navigation">
         <div className="container">
-          <div className="navbar-inner">
+          <div className="flex items-center justify-between h-[68px] gap-[var(--space-6)]">
             {/* Logo */}
-            <Link href="/" className="navbar-logo" aria-label="Splitza home">
-              <div className="navbar-logo-icon" aria-hidden="true">S</div>
-              <span className="navbar-logo-text">Splitza</span>
+            <Link href="/" className="flex items-center gap-[var(--space-3)] no-underline shrink-0" aria-label="Splitza home">
+              <div className="w-[36px] h-[36px] [background:var(--gradient-accent)] rounded-[10px] flex items-center justify-center text-white font-[var(--font-heading)] font-black text-lg shadow-[var(--shadow-accent)]" aria-hidden="true">S</div>
+              <span className="font-[var(--font-heading)] text-[1.375rem] font-extrabold text-[var(--color-text-primary)] tracking-[-0.02em]">Splitza</span>
             </Link>
 
             {/* Desktop Nav */}
-            <ul className="navbar-links hide-mobile" role="list">
+            <ul className="flex items-center gap-[var(--space-1)] list-none hide-mobile" role="list">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`navbar-link ${isActive(link.href) ? "navbar-link-active" : ""}`}
+                    className={`px-[0.875rem] py-[0.5rem] text-[0.9375rem] font-medium text-[var(--color-text-secondary)] rounded-[var(--radius-md)] transition-all duration-200 no-underline hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] ${isActive(link.href) ? "text-[var(--color-accent)] bg-[var(--color-accent-light)]" : ""}`}
                   >
                     {link.label}
                   </Link>
@@ -69,11 +69,11 @@ export default function Navbar() {
             </ul>
 
             {/* Right Controls */}
-            <div className="navbar-actions">
+            <div className="flex items-center gap-[var(--space-3)]">
               {/* Theme Toggle */}
               <button
                 id="theme-toggle-btn"
-                className="navbar-theme-btn"
+                className="w-[38px] h-[38px] rounded-[var(--radius-md)] bg-[var(--color-bg-secondary)] border border-[var(--color-border)] flex items-center justify-center cursor-pointer text-[var(--color-text-secondary)] transition-all duration-200 shrink-0 hover:bg-[var(--color-accent-light)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent-alpha)]"
                 onClick={toggleTheme}
                 aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
@@ -99,14 +99,14 @@ export default function Navbar() {
               {/* Mobile hamburger */}
               <button
                 id="mobile-menu-btn"
-                className="navbar-hamburger"
+                className="flex md:hidden flex-col gap-[5px] p-[8px] bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-[var(--radius-md)] cursor-pointer"
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-label="Toggle mobile menu"
                 aria-expanded={mobileOpen}
               >
-                <span className={`hamburger-line ${mobileOpen ? "open" : ""}`} />
-                <span className={`hamburger-line ${mobileOpen ? "open" : ""}`} />
-                <span className={`hamburger-line ${mobileOpen ? "open" : ""}`} />
+                <span className={`block w-[20px] h-[2px] bg-[var(--color-text-primary)] rounded-[2px] transition-all duration-300 origin-center ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
+                <span className={`block w-[20px] h-[2px] bg-[var(--color-text-primary)] rounded-[2px] transition-all duration-300 origin-center ${mobileOpen ? "opacity-0" : ""}`} />
+                <span className={`block w-[20px] h-[2px] bg-[var(--color-text-primary)] rounded-[2px] transition-all duration-300 origin-center ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
               </button>
             </div>
           </div>
@@ -114,167 +114,24 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Menu */}
-      <div className={`mobile-menu ${mobileOpen ? "mobile-menu-open" : ""}`} aria-hidden={!mobileOpen}>
+      <div className={`fixed top-[68px] inset-x-0 bg-[var(--color-surface)] border-b border-[var(--color-border)] z-[99] py-[var(--space-5)] transition-all duration-300 shadow-[var(--shadow-lg)] ${mobileOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-[10px] opacity-0 pointer-events-none"}`} aria-hidden={!mobileOpen}>
         <div className="container">
-          <ul role="list" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <ul role="list" className="flex flex-col gap-[var(--space-2)]">
             {navLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="mobile-menu-link" onClick={() => setMobileOpen(false)}>
+                <Link href={link.href} className="block py-[var(--space-3)] px-[var(--space-4)] text-[1.0625rem] font-medium text-[var(--color-text-primary)] rounded-[var(--radius-md)] transition-all duration-200 no-underline hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-accent)]" onClick={() => setMobileOpen(false)}>
                   {link.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <div style={{ marginTop: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <div className="mt-[var(--space-6)] flex flex-col gap-[var(--space-3)]">
             <Link href="/auth/login" className="btn btn-ghost w-full" id="mobile-login-btn" onClick={() => setMobileOpen(false)}>Log in</Link>
             <Link href="/auth/register" className="btn btn-primary w-full" id="mobile-signup-btn" onClick={() => setMobileOpen(false)}>Get Started Free</Link>
           </div>
         </div>
       </div>
 
-      <style>{`
-        .navbar {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-          background: var(--navbar-bg);
-          border-bottom: 1px solid transparent;
-          transition: all 0.3s ease;
-          padding: 0;
-        }
-        .navbar-scrolled {
-          border-bottom-color: var(--navbar-border);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          box-shadow: var(--shadow-sm);
-        }
-        .navbar-inner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          height: 68px;
-          gap: var(--space-6);
-        }
-        .navbar-logo {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          text-decoration: none;
-          flex-shrink: 0;
-        }
-        .navbar-logo-icon {
-          width: 36px;
-          height: 36px;
-          background: var(--gradient-accent);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-family: var(--font-heading);
-          font-weight: 900;
-          font-size: 1.125rem;
-          box-shadow: var(--shadow-accent);
-        }
-        .navbar-logo-text {
-          font-family: var(--font-heading);
-          font-size: 1.375rem;
-          font-weight: 800;
-          color: var(--color-text-primary);
-          letter-spacing: -0.02em;
-        }
-        .navbar-links {
-          display: flex;
-          align-items: center;
-          gap: var(--space-1);
-          list-style: none;
-        }
-        .navbar-link {
-          padding: 0.5rem 0.875rem;
-          font-size: 0.9375rem;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          border-radius: var(--radius-md);
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-        .navbar-link:hover { color: var(--color-text-primary); background: var(--color-bg-secondary); }
-        .navbar-link-active { color: var(--color-accent); background: var(--color-accent-light); }
-        .navbar-actions {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-        }
-        .navbar-theme-btn {
-          width: 38px;
-          height: 38px;
-          border-radius: var(--radius-md);
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--color-text-secondary);
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-        }
-        .navbar-theme-btn:hover { background: var(--color-accent-light); color: var(--color-accent); border-color: var(--color-accent-alpha); }
-        .navbar-hamburger {
-          display: none;
-          flex-direction: column;
-          gap: 5px;
-          padding: 8px;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          cursor: pointer;
-        }
-        .hamburger-line {
-          display: block;
-          width: 20px;
-          height: 2px;
-          background: var(--color-text-primary);
-          border-radius: 2px;
-          transition: all 0.3s ease;
-          transform-origin: center;
-        }
-        .hamburger-line.open:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-        .hamburger-line.open:nth-child(2) { opacity: 0; }
-        .hamburger-line.open:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-        .mobile-menu {
-          position: fixed;
-          top: 68px;
-          left: 0;
-          right: 0;
-          background: var(--color-surface);
-          border-bottom: 1px solid var(--color-border);
-          z-index: 99;
-          padding: var(--space-5) 0;
-          transform: translateY(-10px);
-          opacity: 0;
-          pointer-events: none;
-          transition: all 0.3s ease;
-          box-shadow: var(--shadow-lg);
-        }
-        .mobile-menu-open { transform: translateY(0); opacity: 1; pointer-events: all; }
-        .mobile-menu-link {
-          display: block;
-          padding: var(--space-3) var(--space-4);
-          font-size: 1.0625rem;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          border-radius: var(--radius-md);
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-        .mobile-menu-link:hover { background: var(--color-bg-secondary); color: var(--color-accent); }
-        @media (max-width: 768px) {
-          .navbar-hamburger { display: flex; }
-        }
-      `}</style>
     </>
   );
 }
