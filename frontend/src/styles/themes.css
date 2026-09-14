@@ -95,6 +95,18 @@
   /* Navbar */
   --navbar-bg: rgba(247, 248, 252, 0.85);
   --navbar-border: rgba(13, 14, 26, 0.06);
+
+  /* Dashboard */
+  --dash-canvas: #f4f5f9;
+  --dash-surface: #ffffff;
+  --dash-surface-strong: #eaecf2;
+  --dash-border: rgba(13, 14, 26, 0.1);
+  --dash-ink: #0d0e1a;
+  --dash-ink-soft: #6b7280;
+  --dash-lime: #c8ff57;
+  --dash-lime-ink: #0d0e1a;
+  --dash-violet: #7c5cff;
+  --dash-violet-ink: #ffffff;
 }
 
 /* ---- DARK THEME ---- */
@@ -150,4 +162,16 @@
 
   --navbar-bg: rgba(8, 9, 15, 0.85);
   --navbar-border: rgba(238, 238, 255, 0.06);
+
+  /* Dashboard */
+  --dash-canvas: #0d0e1a;
+  --dash-surface: #131420;
+  --dash-surface-strong: #1a1b2e;
+  --dash-border: rgba(238, 238, 255, 0.08);
+  --dash-ink: #eeeeff;
+  --dash-ink-soft: #6b7385;
+  --dash-lime: #c8ff57;
+  --dash-lime-ink: #0d0e1a;
+  --dash-violet: #7c5cff;
+  --dash-violet-ink: #ffffff;
 }

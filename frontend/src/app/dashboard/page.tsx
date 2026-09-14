@@ -1,45 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { AnimatedThemeToggler } from "@/registry/magicui/animated-theme-toggler";
-import ProfileDropdown from "@/components/profile-dropdown";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { MarketplaceView, type MarketplacePool } from "@/components/marketplace-view";
 import { JoinPage } from "@/components/join-page";
 import { poolsApi, type Pool } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { resolveLogoUrl } from "@/lib/logos";
-import {
-  HostPlanDetails,
-  ServiceCard,
-  type Service,
-} from "@/components/hosted-plans";
-import {
-  Bell,
-  Check,
-  Copy,
-  Lock,
-  MessageCircle,
-  Search,
-  Send,
-  ArrowUpRight,
-} from "lucide-react";
+import { HostPlanDetails, type Service } from "@/components/hosted-plans";
+import { DashboardSidebar, MobileSectionNav, type DashboardSection } from "@/components/dashboard/sidebar";
+import { DashboardTopbar } from "@/components/dashboard/topbar";
+import { PoolCard } from "@/components/dashboard/pool-card";
+import { PoolDrawer } from "@/components/dashboard/pool-drawer";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { Check, Copy, Layers, Lock, MessageCircle, Search, Send, Sparkles, X } from "lucide-react";
 
+const SECTION_META: Record<DashboardSection, { title: string; meta: string }> = {
+  pools: { title: "Your shared pools", meta: "MY SHARED POOLS" },
+};
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const [dark, setDark] = useState(true);
   const [search, setSearch] = useState("");
+  const [section, setSection] = useState<DashboardSection>("pools");
   const [isSharing, setIsSharing] = useState(false);
-  const [isBrowsing, setIsBrowsing]   = useState(false);
+  const [isBrowsing, setIsBrowsing] = useState(false);
   const [joiningPool, setJoiningPool] = useState<MarketplacePool | null>(null);
   const [myPools, setMyPools] = useState<Service[]>([]);
   const [activeService, setActiveService] = useState<Service | null>(null);
+  const [selectedPool, setSelectedPool] = useState<Service | null>(null);
+  const [isPoolsDrawerOpen, setIsPoolsDrawerOpen] = useState(false);
   const [activeShareService, setActiveShareService] = useState<Service | null>(null);
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Sync dark state from stored / preferred theme on first load
+  useEffect(() => {
+    const stored = localStorage.getItem("splitza-theme");
+    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    const initial = (stored ?? preferred) as "dark" | "light";
+    setDark(initial === "dark");
+    document.documentElement.setAttribute("data-theme", initial);
+  }, []);
 
   useEffect(() => {
     const fetchPools = async () => {
@@ -57,10 +60,17 @@ export default function Dashboard() {
             filled: p.filledSeats || 0,
             private: p.visibility === "PRIVATE",
             brand: poolName.substring(0, 2).toUpperCase(),
-            logoUrl: resolveLogoUrl(null, poolName) ?? undefined,
+            logoUrl: (
+              {
+                "netflix": "https://cdn.simpleicons.org/netflix/E50914",
+                "spotify": "https://cdn.simpleicons.org/spotify/1ED760",
+                "youtube": "https://cdn.simpleicons.org/youtube/FF0000",
+                "apple": "https://cdn.simpleicons.org/apple/000000",
+                "canva": "https://cdn.simpleicons.org/canva/00C4CC",
+              } as Record<string, string>
+            )[Object.keys({netflix:1,spotify:1,youtube:1,apple:1,canva:1}).find(k => poolName.toLowerCase().includes(k)) || ""],
             accent: p.visibility === "PRIVATE" ? "bg-violet-400" : "bg-emerald-400",
             planMonths: p.planMonths,
-            startDate: p.startDate,
           };
         };
 
@@ -72,8 +82,15 @@ export default function Dashboard() {
     fetchPools();
   }, []);
 
+
   const toggleTheme = () => {
-    setDark((value) => !value);
+    setDark((prev) => {
+      const next = !prev;
+      const theme = next ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("splitza-theme", theme);
+      return next;
+    });
   };
 
   const handleLaunch = async (details: LaunchPlanDetails) => {
@@ -89,7 +106,7 @@ export default function Dashboard() {
         hostUpiId: "host@upi", // mock upi since it's not exposed back from SharePage yet
       };
 
-      const res = await poolsApi.create(payload);
+      await poolsApi.create(payload);
 
       const newService: Service = {
         name: details.name,
@@ -106,11 +123,11 @@ export default function Dashboard() {
 
       setMyPools((prev) => [newService, ...prev]);
       setIsSharing(false);
+      setSection("pools");
       if (details.isPrivate) setActiveShareService(newService);
     } catch (e) {
       console.error("Failed to create plan:", e);
-      setCreateError("Failed to create plan. Please try again.");
-      setTimeout(() => setCreateError(null), 4000);
+      alert("Failed to create plan on backend.");
     } finally {
       setIsCreating(false);
     }
@@ -163,319 +180,171 @@ export default function Dashboard() {
     );
   }
 
+  const filteredPools = myPools.filter((s) =>
+    `${s.name} ${s.host}`.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <main
       className={[
-        "min-h-screen overflow-x-hidden px-4 pb-12 font-sans transition-colors duration-300 sm:px-6 lg:px-10",
-        dark
-          ? "bg-[#020617] text-slate-50"
-          : "bg-slate-100 text-slate-950",
+        "min-h-screen font-sans transition-colors duration-300",
+        dark ? "dark bg-[var(--dash-canvas)] text-[var(--dash-ink)]" : "bg-[var(--dash-canvas)] text-[var(--dash-ink)]",
       ].join(" ")}
     >
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
+      <div className="mx-auto flex max-w-[1320px] gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <DashboardSidebar
+          dark={dark}
+          active={section}
+          onChange={setSection}
+          onBrowseMarketplace={() => setIsBrowsing(true)}
+          onCreate={() => setIsSharing(true)}
+        />
 
-      <header
-        className={[
-          "sticky top-3 z-50 mx-auto flex h-[64px] w-full max-w-[1220px] items-center gap-3 rounded-lg border-2 px-3 sm:gap-5 sm:px-4",
-          "backdrop-blur-xl transition-all duration-300",
-          dark
-            ? "border-white bg-[#0b1220]/95 shadow-[6px_6px_0_white]"
-            : "border-slate-900 bg-white/95 shadow-[6px_6px_0_#a78bfa]",
-        ].join(" ")}
-      >
-        {/* Logo */}
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <MobileSectionNav active={section} onChange={setSection} onBrowseMarketplace={() => setIsBrowsing(true)} />
 
-        <a href="/" className="flex shrink-0 items-center gap-2.5">
-          <span
-            className="
-              grid size-9 place-items-center
-              rounded-lg border-[3px] border-black
-              bg-emerald-300
-              font-black text-slate-950
-            "
-          >
-            S
-          </span>
-
-          <span className="hidden font-mono text-lg font-black tracking-[-0.08em] sm:block">
-            SplitZa
-          </span>
-        </a>
-
-        {/* Search */}
-
-        <label
-          className={[
-            "ml-auto hidden min-w-0 flex-1 items-center gap-2 rounded-lg border-[3px] border-black px-3 sm:flex lg:max-w-[520px]",
-            "transition-colors duration-200",
-            dark
-              ? "bg-slate-900 text-slate-400 focus-within:border-white"
-              : "bg-slate-50 text-slate-500 focus-within:border-emerald-500",
-          ].join(" ")}
-        >
-          <Search size={16} className="transition-colors" />
-
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search apps, active groups, or hosts..."
-            className={[
-              "min-w-0 flex-1 bg-transparent py-2 font-mono text-[11px] outline-none",
-              dark
-                ? "text-slate-100 placeholder:text-slate-500"
-                : "text-slate-900 placeholder:text-slate-400",
-            ].join(" ")}
+          <DashboardTopbar
+            dark={dark}
+            onToggleTheme={toggleTheme}
+            search={search}
+            onSearchChange={setSearch}
+            sectionTitle={SECTION_META[section].title}
+            sectionMeta={SECTION_META[section].meta}
+            onCreate={() => setIsSharing(true)}
           />
 
-          <kbd
-            className={[
-              "rounded border px-1.5 py-1 text-[9px]",
-              dark
-                ? "border-slate-600 text-slate-400"
-                : "border-slate-300 text-slate-500",
-            ].join(" ")}
-          >
-            ⌘K
-          </kbd>
-        </label>
+          {section === "pools" && (
+            <section aria-labelledby="my-plans-title">
+              {myPools.length === 0 ? (
+                <EmptyState
+                  dark={dark}
+                  icon={Layers}
+                  title="No shared pools yet"
+                  description="Host a subscription to split it with others, or browse the marketplace to join an existing pool."
+                  actionLabel="Create a split plan"
+                  onAction={() => setIsSharing(true)}
+                />
+              ) : (
+                <>
+                  <h2 id="my-plans-title" className="sr-only">
+                    Your hosted pools
+                  </h2>
+                  {filteredPools.length === 0 ? (
+                    <EmptyState
+                      dark={dark}
+                      icon={Layers}
+                      title="No pools match your search"
+                      description="Try a different name or host, or clear the search field."
+                    />
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {filteredPools.slice(0, 2).map((service, index) => (
+                          <PoolCard key={service.name} service={service} dark={dark} index={index} onOpen={setSelectedPool} />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPoolsDrawerOpen(true)}
+                        className="mt-4 flex w-full items-center justify-between rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] px-4 py-3 text-left transition hover:-translate-y-0.5 hover:bg-[var(--dash-surface-strong)]"
+                      >
+                        <span>
+                          <span className="block text-sm font-bold text-[var(--dash-ink)]">View all pools</span>
+                          <span className="mt-0.5 block text-xs text-[var(--dash-ink-soft)]">Browse all {filteredPools.length} shared plans</span>
+                        </span>
+                        <span className="rounded-full bg-[var(--dash-lime)] px-3 py-1.5 text-xs font-black text-[var(--dash-lime-ink)]">{filteredPools.length}</span>
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </section>
+          )}
 
-        {/* Tools */}
+          {/* Quick actions footer */}
+          <section className="mt-2 grid gap-4 sm:grid-cols-2">
+            <motion.button
+              type="button"
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsBrowsing(true)}
+              className="flex items-center justify-between gap-3 rounded-3xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-5 text-left"
+            >
+              <div>
+                <p className="text-sm font-bold text-[var(--dash-ink)]">Join a subscription</p>
+                <p className="mt-1 text-xs text-[var(--dash-ink-soft)]">
+                  Match into a secure shared plan with escrow protection.
+                </p>
+              </div>
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--dash-lime)] text-[var(--dash-lime-ink)]">
+                <Sparkles size={16} />
+              </span>
+            </motion.button>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
-          <button
-            onClick={() => alert("Messages coming soon!")}
-            aria-label="Messages"
-            className={[
-              "relative grid size-9 place-items-center rounded-lg border-2 transition hover:-translate-y-0.5",
-              dark
-                ? "border-slate-700 bg-slate-900 hover:border-emerald-300"
-                : "border-slate-300 bg-white hover:border-emerald-500",
-            ].join(" ")}
-          >
-            <MessageCircle size={17} />
-
-            <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-red-500 font-bold text-[8px] text-white">
-              2
-            </span>
-          </button>
-
-          <button
-            onClick={() => alert("Notifications coming soon!")}
-            aria-label="Notifications"
-            className={[
-              "grid size-9 place-items-center rounded-lg border-2 transition hover:-translate-y-0.5",
-              dark
-                ? "border-slate-700 bg-slate-900 hover:border-emerald-300"
-                : "border-slate-300 bg-white hover:border-emerald-500",
-            ].join(" ")}
-          >
-            <Bell size={17} />
-          </button>
-
-          {/* Theme button */}
-
-          <AnimatedThemeToggler dark={dark} onToggle={toggleTheme} />
-
-          <ProfileDropdown />
+            <motion.button
+              type="button"
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsSharing(true)}
+              className="flex items-center justify-between gap-3 rounded-3xl border border-[var(--dash-border)] bg-[var(--dash-ink)] p-5 text-left text-[var(--dash-canvas)]"
+            >
+              <div>
+                <p className="text-sm font-bold">Share a subscription</p>
+                <p className="mt-1 text-xs text-[var(--dash-canvas)]/70">
+                  List your plan safely and route automated UPI payouts.
+                </p>
+              </div>
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--dash-violet)] text-[var(--dash-violet-ink)]">
+                <Sparkles size={16} />
+              </span>
+            </motion.button>
+          </section>
         </div>
-      </header>
+      </div>
 
-      {/* =====================================================
-          HERO
-      ===================================================== */}
-
-      <section className="relative mx-auto max-w-[1220px] border-b border-slate-700 px-0 pb-12 pt-16 sm:pt-20 lg:pb-16 lg:pt-24">
-        {/* Background decoration */}
-
-        <div
-          className="
-            pointer-events-none
-            absolute right-0 top-8
-            hidden size-40 rounded-full
-            border border-slate-700
-            lg:block
-          "
-        />
-
-        <div
-          className="
-            pointer-events-none
-            absolute right-10 top-16
-            hidden size-24 rounded-full
-            border border-dashed border-slate-700
-            lg:block
-          "
-        />
-
-        <div className="relative max-w-4xl">
-          <p className="font-mono text-[10px] font-black tracking-[0.18em] text-emerald-300">
-            YOUR MEMBER SPACE / 0048
-          </p>
-
-          <h1 className="mt-5 font-mono text-[clamp(54px,9vw,118px)] font-black uppercase leading-[0.82] tracking-[-0.1em]">
-            Welcome back,
-            <br />
-          <em className="not-italic text-amber-300">{user?.name?.split(" ")[0] ?? "Friend"}.</em>
-          </h1>
-
-          <p className="mt-7 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">
-            One place to manage your{" "}
-            <span className="inline-block rounded bg-emerald-300 px-1.5 font-bold text-slate-950">
-              shared plans
-            </span>{" "}
-            and save{" "}
-            <span className="inline-block rounded bg-amber-300 px-1.5 font-bold text-slate-950">
-              ₹1,140 this month
-            </span>
-            .
-          </p>
-
-          <div className="mt-7 flex flex-wrap items-center gap-5 font-mono text-[9px] font-bold tracking-[0.12em] text-slate-400">
-            <span className="inline-flex items-center gap-2">
-              <i className="size-2 rounded-full bg-emerald-300" />
-              3 ACTIVE GROUPS
-            </span>
-
-            <span>4 VERIFICATIONS PASSED</span>
-
-            <span className="text-amber-300">NEXT AUTOPAY IN 4 DAYS</span>
-          </div>
-        </div>
-
-        {/* Orbit */}
-
-        <div className="absolute right-[4%] top-14 hidden size-36 rounded-full border border-dashed border-slate-700 lg:block">
-          <span
-            className="
-              absolute left-1/2 top-1/2
-              grid size-14 -translate-x-1/2 -translate-y-1/2
-              place-items-center
-              rounded-full
-              border-[3px] border-black
-              bg-violet-300
-              font-black text-slate-950
-              shadow-[5px_5px_0_#34d399]
-            "
-          >
-            A
-          </span>
-
-          <span className="absolute -top-4 left-1/2 grid size-9 -translate-x-1/2 place-items-center rounded-lg border-2 border-black bg-red-500 text-sm font-black text-white shadow-[3px_3px_0_#000]">
-            N
-          </span>
-
-          <span className="absolute right-[-10px] top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg border-2 border-black bg-green-400 text-sm font-black text-black shadow-[3px_3px_0_#000]">
-            S
-          </span>
-
-          <span className="absolute -bottom-4 left-1/2 grid size-9 -translate-x-1/2 place-items-center rounded-lg border-2 border-black bg-red-500 text-xs font-black text-white shadow-[3px_3px_0_#000]">
-            ▶
-          </span>
-
-          <span className="absolute left-[-10px] top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg border-2 border-black bg-emerald-400 text-sm font-black text-black shadow-[3px_3px_0_#000]">
-            C
-          </span>
-        </div>
-      </section>
-
-      {/* =====================================================
-          ACTION CARDS
-      ===================================================== */}
-
-      <section className="mx-auto grid max-w-[1060px] gap-6 px-0 py-10 lg:grid-cols-2">
-
-        {/* JOINER CARD */}
-        <motion.article
-          whileHover={{ y: -6, rotate: -0.3 }}
-          transition={{ duration: 0.2 }}
-          className="flex flex-col justify-between rounded-3xl border-[3px] border-black bg-slate-50 p-7 text-slate-950 shadow-[10px_10px_0_#34d399]"
-        >
-          <div>
-            <span className="font-mono text-xs font-black text-slate-400">01</span>
-
-            <h2 className="mt-5 font-mono text-[clamp(42px,5.5vw,72px)] font-black uppercase leading-[0.85] tracking-[-0.06em]">
-              JOIN A<br />
-              <span className="text-amber-400">SUBSCRIPTION.</span>
-            </h2>
-
-            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-500">
-              Don&apos;t pay full retail. Match into a secure shared plan with built-in escrow protection.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setIsBrowsing(true)}
-            className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border-[3px] border-black bg-transparent px-5 py-4 font-mono text-[11px] font-black text-slate-950 ring-inset ring-emerald-400 transition hover:bg-emerald-300 hover:shadow-[4px_4px_0_#000] active:translate-x-0.5 active:translate-y-0.5"
-            style={{ boxShadow: "0 0 0 2px #34d399 inset" }}
-          >
-            BROWSE ACTIVE GROUPS
-            <ArrowUpRight size={15} />
-          </button>
-        </motion.article>
-
-        {/* HOST CARD */}
-        <motion.article
-          whileHover={{ y: -6, rotate: 0.3 }}
-          transition={{ duration: 0.2 }}
-          className="flex flex-col justify-between rounded-3xl border-[3px] border-black bg-[#0b1220] p-7 text-white shadow-[10px_10px_0_#c4b5fd]"
-        >
-          <div>
-            <span className="font-mono text-xs font-black text-slate-500">02</span>
-
-            <h2 className="mt-5 font-mono text-[clamp(42px,5.5vw,72px)] font-black uppercase leading-[0.85] tracking-[-0.06em]">
-              SHARE A<br />
-              <span className="text-violet-300">SUBSCRIPTION.</span>
-            </h2>
-
-            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-400">
-              List your active subscription safely and route automated weekly payouts directly to your UPI ID.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setIsSharing(true)}
-            className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border-[3px] border-transparent bg-transparent px-5 py-4 font-mono text-[11px] font-black text-white transition hover:bg-violet-300 hover:text-slate-950 hover:shadow-[4px_4px_0_#000] active:translate-x-0.5 active:translate-y-0.5"
-            style={{ boxShadow: "0 0 0 2px #c4b5fd inset" }}
-          >
-            CREATE A SPLIT PLAN
-            <ArrowUpRight size={15} />
-          </button>
-        </motion.article>
-      </section>
-
-
-      {/* =====================================================
-          MY PLANS GRID
-      ===================================================== */}
-      {myPools.length > 0 && (
-        <section className="mx-auto max-w-[1220px] py-10" aria-labelledby="my-plans-title">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <p className="font-mono text-[9px] font-black tracking-[0.16em] text-violet-300">MY PLANS / {myPools.length.toString().padStart(2, "0")}</p>
-              <h2 id="my-plans-title" className={["mt-2 font-mono text-2xl font-black uppercase tracking-[-0.06em] sm:text-3xl", dark ? "text-[#F5F3EC]" : "text-slate-950"].join(" ")}>Your hosted pools</h2>
+      {isPoolsDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/45 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="all-pools-title">
+          <div className="flex h-full w-full max-w-2xl flex-col border-l border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--dash-ink-soft)]">POOL LIBRARY</p>
+                <h2 id="all-pools-title" className="mt-1 text-2xl font-black tracking-tight text-[var(--dash-ink)]">All shared pools</h2>
+                <p className="mt-1 text-sm text-[var(--dash-ink-soft)]">Browse every plan connected to your account.</p>
+              </div>
+              <button type="button" aria-label="Close all pools" onClick={() => setIsPoolsDrawerOpen(false)} className="grid size-10 shrink-0 place-items-center rounded-full border border-[var(--dash-border)] text-[var(--dash-ink)] transition hover:bg-[var(--dash-surface-strong)]">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mt-5 flex items-center gap-2 rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] px-3 py-2.5">
+              <Search size={16} className="text-[var(--dash-ink-soft)]" />
+              <input aria-label="Search all pools" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search pools or hosts" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--dash-ink)] outline-none placeholder:text-[var(--dash-ink-soft)]" />
+            </div>
+            <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {filteredPools.map((service, index) => (
+                  <PoolCard key={service.name} service={service} dark={dark} index={index} onOpen={(pool) => { setIsPoolsDrawerOpen(false); setSelectedPool(pool); }} />
+                ))}
+              </div>
             </div>
           </div>
-          <div className="-mx-4 mt-6 flex snap-x gap-4 overflow-x-auto px-5 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {myPools
-              .filter((s) => `${s.name} ${s.host}`.toLowerCase().includes(search.toLowerCase()))
-              .map((service) => (
-                <ServiceCard key={service.name} service={service} dark={dark} onOpen={setActiveService} />
-              ))}
-          </div>
-        </section>
-      )}
-
-      {/* Error toast */}
-      {createError && (
-        <div className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 rounded-xl border-2 border-red-400 bg-red-950 px-5 py-3 font-mono text-sm font-black text-red-300 shadow-[4px_4px_0_#f87171]">
-          ⚠ {createError}
         </div>
       )}
 
-      {/* Private pool popup */}
+      <PoolDrawer
+        service={selectedPool}
+        dark={dark}
+        onClose={() => setSelectedPool(null)}
+        onViewFull={(s) => {
+          setSelectedPool(null);
+          setActiveService(s);
+        }}
+        onShare={(s) => {
+          setSelectedPool(null);
+          setIsSharing(true);
+        }}
+      />
 
+      {/* Private pool popup */}
       {activeShareService && (
         <div className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/75 px-4 py-6 backdrop-blur-md">
           <section
