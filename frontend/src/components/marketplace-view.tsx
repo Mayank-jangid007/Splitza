@@ -25,10 +25,10 @@ export type MarketplacePool = {
 // ─── Category detection ───────────────────────────────────────────────────────
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   Entertainment: ["netflix", "prime", "amazon", "disney", "hotstar", "jio", "zee", "sonyliv", "youtube"],
-  Music:         ["spotify", "apple music", "jiosaavn", "gaana", "wynk"],
-  Cloud:         ["microsoft", "google one", "dropbox", "icloud"],
-  Education:     ["coursera", "udemy", "linkedin learning", "skillshare", "duolingo"],
-  Games:         ["xbox", "playstation", "ea play", "gamepass", "nintendo"],
+  Music: ["spotify", "apple music", "jiosaavn", "gaana", "wynk"],
+  Cloud: ["microsoft", "google one", "dropbox", "icloud"],
+  Education: ["coursera", "udemy", "linkedin learning", "skillshare", "duolingo"],
+  Games: ["xbox", "playstation", "ea play", "gamepass", "nintendo"],
 }
 
 function resolveCategory(name: string): string {
@@ -41,58 +41,58 @@ function resolveCategory(name: string): string {
 
 const ACCENT_BY_CATEGORY: Record<string, "red" | "green" | "blue" | "violet"> = {
   Entertainment: "red",
-  Music:         "green",
-  Cloud:         "blue",
-  Education:     "violet",
-  Games:         "red",
-  Others:        "blue",
+  Music: "green",
+  Cloud: "blue",
+  Education: "violet",
+  Games: "red",
+  Others: "blue",
 }
 
 // ─── Map API item → internal MarketplacePool ──────────────────────────────────
 function mapApiPool(p: MarketplacePoolItem): MarketplacePool {
-  const createdMs    = new Date(p.createdAt).getTime()
-  const totalDays    = p.planMonths * 30
-  const elapsedDays  = Math.floor((Date.now() - createdMs) / 86_400_000)
+  const createdMs = new Date(p.createdAt).getTime()
+  const totalDays = p.planMonths * 30
+  const elapsedDays = Math.floor((Date.now() - createdMs) / 86_400_000)
   const remainingDays = Math.max(1, totalDays - elapsedDays)
-  const category     = resolveCategory(p.platformName)
+  const category = resolveCategory(p.platformName)
   return {
-    id:           p.id,
-    service:      p.platformName,
+    id: p.id,
+    service: p.platformName,
     category,
-    term:         p.planMonths,
-    price:        p.pricePerSeat,
-    available:    p.openSeats,
-    total:        p.maxSeats,
-    accent:       ACCENT_BY_CATEGORY[category] ?? "blue",
-    kind:         p.isCustom ? "CUSTOM" : "PRE_STORED",
+    term: p.planMonths,
+    price: p.pricePerSeat,
+    available: p.openSeats,
+    total: p.maxSeats,
+    accent: ACCENT_BY_CATEGORY[category] ?? "blue",
+    kind: p.isCustom ? "CUSTOM" : "PRE_STORED",
     remainingDays,
-    hostName:     p.hostName,
-    logoUrl:      resolveLogoUrl(p.platformLogoUrl, p.platformName),
+    hostName: p.hostName,
+    logoUrl: resolveLogoUrl(p.platformLogoUrl, p.platformName),
   }
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const categories = [
-  ["Entertainment", Clapperboard,    "red"],
-  ["Cloud",         Cloud,           "blue"],
-  ["Education",     GraduationCap,   "violet"],
-  ["Music",         Headphones,      "green"],
-  ["Games",         Gamepad2,        "red"],
-  ["Others",        CircleEllipsis,  "blue"],
+  ["Entertainment", Clapperboard, "red"],
+  ["Cloud", Cloud, "blue"],
+  ["Education", GraduationCap, "violet"],
+  ["Music", Headphones, "green"],
+  ["Games", Gamepad2, "red"],
+  ["Others", CircleEllipsis, "blue"],
 ] as const
 
 const accentClasses = {
-  red:    "bg-[#9FA1FF] text-neutral-950",
-  green:  "bg-[#D9F9DF] text-neutral-950",
-  blue:   "bg-[#AEE2FF] text-neutral-950",
+  red: "bg-[#9FA1FF] text-neutral-950",
+  green: "bg-[#D9F9DF] text-neutral-950",
+  blue: "bg-[#AEE2FF] text-neutral-950",
   violet: "bg-[#B5BAFF] text-neutral-950",
 }
 
-// ─── Pool Card ────────────────────────────────────────────────────────────────
+// ─── Pool Card ────────────────────────────────────────────────────────────
 function PoolCard({ pool, onJoin, dark }: { pool: MarketplacePool; onJoin: (pool: MarketplacePool) => void; dark: boolean }) {
   const filledSeats = pool.total - pool.available
-  const dailyRate   = Math.round(pool.price / (pool.term * 30))
-  const fairPrice   = dailyRate * pool.remainingDays
+  const dailyRate = Math.round(pool.price / (pool.term * 30))
+  const fairPrice = dailyRate * pool.remainingDays
 
   return (
     <motion.article
@@ -173,12 +173,12 @@ export function MarketplaceView({
   onCreate: () => void
   onJoin: (pool: MarketplacePool) => void
 }) {
-  const [query, setQuery]           = useState("")
+  const [query, setQuery] = useState("")
   const [searchOpen, setSearchOpen] = useState(false)
-  const [category, setCategory]     = useState<string | null>(null)
-  const [rawPools, setRawPools]     = useState<MarketplacePool[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState<string | null>(null)
+  const [category, setCategory] = useState<string | null>(null)
+  const [rawPools, setRawPools] = useState<MarketplacePool[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch from backend with debounced search
   useEffect(() => {
@@ -204,7 +204,7 @@ export function MarketplaceView({
     [rawPools, category]
   )
 
-  const selectedCategory   = categories.find(([name]) => name === category)
+  const selectedCategory = categories.find(([name]) => name === category)
   const SelectedCategoryIcon = selectedCategory?.[1]
 
   return (
