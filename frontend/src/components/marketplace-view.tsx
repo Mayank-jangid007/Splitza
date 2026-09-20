@@ -88,7 +88,7 @@ const accentClasses = {
   violet: "bg-[#B5BAFF] text-neutral-950",
 }
 
-// ─── Pool Card ────────────────────────────────────────────────────────────
+// ─── Pool Card ───────────────────────────────────────────────────────────
 function PoolCard({ pool, onJoin, dark }: { pool: MarketplacePool; onJoin: (pool: MarketplacePool) => void; dark: boolean }) {
   const filledSeats = pool.total - pool.available
   const dailyRate = Math.round(pool.price / (pool.term * 30))
