@@ -5,7 +5,7 @@ import gsap from 'gsap'
 import { AnimatePresence, motion } from 'motion/react'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ArrowRight, Check, ChevronDown, CircleDollarSign, LockKeyhole, Menu, Moon, ShieldCheck, Sparkles, Sun, Wallet, X, Users } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, CircleDollarSign, LockKeyhole, Menu, ShieldCheck, Sparkles, Wallet, X, Users } from 'lucide-react'
 import Link from 'next/link'
 import SplitFlapLogoTicker from '@/components/split-flap-logo-ticker'
 import './landing.css'
@@ -25,7 +25,6 @@ const subSteps = ['SELECT A PREMIUM APP', 'CONNECT UPI AUTOPAY', 'GET ENCRYPTED 
 const PLATFORMS = ["Netflix", "Spotify", "YouTube", "Canva", "ChatGPT"]
 
 export default function Home() {
-  const [dark, setDark] = useState(true)
 
   useEffect(() => {
     gsap.registerPlugin(ScrollToPlugin, ScrollTrigger)
@@ -54,8 +53,8 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  return <main className={`neo-home ${dark ? 'neo-dark' : 'neo-light'}`}>
-    <header className="neo-nav"><a href="#top" className="neo-logo"><span className="neo-logo-mark">S</span>SUBSPLIT</a><button className="neo-mobile-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">{menu ? <X size={20} /> : <Menu size={20} />}</button><nav className={menu ? 'neo-links is-open' : 'neo-links'}><a href="#trust">ABOUT</a><a href="#faq">FAQ</a><a href="#how">GUIDE</a></nav><div className="neo-actions"><button className="neo-theme" onClick={() => { const updateTheme = () => setDark((value) => !value); if ('startViewTransition' in document) { (document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(updateTheme) } else { updateTheme() } }} aria-label="Toggle theme">{dark ? <Sun size={17} /> : <Moon size={17} />}</button><a href="/auth/login" className="neo-login">LOGIN</a><a href="/auth/register" className="neo-button neo-button-small">START SAVING <ArrowRight size={15} /></a></div></header>
+  return <main className="neo-home neo-dark">
+    <header className="neo-nav"><a href="#top" className="neo-logo"><span className="neo-logo-mark">S</span>SUBSPLIT</a><button className="neo-mobile-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">{menu ? <X size={20} /> : <Menu size={20} />}</button><nav className={menu ? 'neo-links is-open' : 'neo-links'}><a href="#trust">ABOUT</a><a href="#faq">FAQ</a><a href="#how">GUIDE</a></nav><div className="neo-actions"><a href="/auth/login" className="neo-login">LOGIN</a><a href="/auth/register" className="neo-button neo-button-small">START SAVING <ArrowRight size={15} /></a></div></header>
 
     <section id="top" className="relative overflow-hidden border-b border-[var(--neo-border)]">
       <div className="bg-dot-grid absolute inset-0" aria-hidden="true" />
