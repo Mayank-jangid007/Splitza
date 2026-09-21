@@ -5,7 +5,8 @@ import gsap from 'gsap'
 import { AnimatePresence, motion } from 'motion/react'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ArrowRight, Check, ChevronDown, CircleDollarSign, LockKeyhole, Menu, Moon, ShieldCheck, Sparkles, Sun, Wallet, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, CircleDollarSign, LockKeyhole, Menu, Moon, ShieldCheck, Sparkles, Sun, Wallet, X, Users } from 'lucide-react'
+import Link from 'next/link'
 import SplitFlapLogoTicker from '@/components/split-flap-logo-ticker'
 import './landing.css'
 
@@ -21,6 +22,7 @@ const faqs = [
 ]
 const hostSteps = ['LIST UNUSED SLOTS', 'BOT VERIFIES CREDENTIALS', 'AUTOMATED WEEKLY PAYOUTS']
 const subSteps = ['SELECT A PREMIUM APP', 'CONNECT UPI AUTOPAY', 'GET ENCRYPTED ACCESS']
+const PLATFORMS = ["Netflix", "Spotify", "YouTube", "Canva", "ChatGPT"]
 
 export default function Home() {
   const [dark, setDark] = useState(true)
@@ -55,7 +57,72 @@ export default function Home() {
   return <main className={`neo-home ${dark ? 'neo-dark' : 'neo-light'}`}>
     <header className="neo-nav"><a href="#top" className="neo-logo"><span className="neo-logo-mark">S</span>SUBSPLIT</a><button className="neo-mobile-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">{menu ? <X size={20} /> : <Menu size={20} />}</button><nav className={menu ? 'neo-links is-open' : 'neo-links'}><a href="#trust">ABOUT</a><a href="#faq">FAQ</a><a href="#how">GUIDE</a></nav><div className="neo-actions"><button className="neo-theme" onClick={() => { const updateTheme = () => setDark((value) => !value); if ('startViewTransition' in document) { (document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(updateTheme) } else { updateTheme() } }} aria-label="Toggle theme">{dark ? <Sun size={17} /> : <Moon size={17} />}</button><a href="/auth/login" className="neo-login">LOGIN</a><a href="/auth/register" className="neo-button neo-button-small">START SAVING <ArrowRight size={15} /></a></div></header>
 
-    <section id="top" className="neo-hero neo-shell"><div className="neo-hero-copy"><span className="neo-chip"><Sparkles size={14} /> AUTOMATED & SECURE SUBSCRIPTION SPLITTING</span><h1>Share the cost.<br /><em>Not the risk.</em></h1><p>The automated escrow platform that instantly matches you into shared premium groups. Save up to 80% on Netflix, Spotify, and YouTube with auto-pay and real-time fraud protection.</p><div className="neo-hero-actions"><a href="/auth/register" className="neo-button">CREATE MY ACCOUNT <ArrowRight size={18} /></a></div></div><div className="neo-activation"><div className="neo-activation-card"><div className="neo-activation-head"><span className="neo-netflix">N</span><div><b>Netflix Premium 4K</b><small>Split active</small></div><span className="neo-status">ACTIVE</span></div><div className="neo-queue-label"><span>SMART QUEUE</span><b>3/4 VERIFIED</b></div><div className="neo-queue"><span className="neo-avatar neo-avatar-1">H</span><span className="neo-avatar">C1</span><span className="neo-avatar neo-avatar-2">C2</span><span className="neo-joining">+<small>Joining...</small></span></div><div className="neo-split-tile"><div><small>TOTAL PLAN COST</small><strong>&#8377;649/mo</strong></div><ArrowRight size={22} /><div><small>YOUR SPLIT</small><strong>&#8377;162/mo</strong></div><span>75% SAVED</span></div><div className="neo-verified"><ShieldCheck size={18} /><span>VERIFICATION BOT STATUS: <b>SUCCESS</b></span><Check size={17} /></div></div></div></section>
+    <section id="top" className="relative overflow-hidden border-b border-[var(--neo-border)]">
+      <div className="bg-dot-grid absolute inset-0" aria-hidden="true" />
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--neo-text)] bg-[var(--neo-surface)] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[var(--neo-text)] shadow-[2px_2px_0_var(--neo-text)]">
+            <ShieldCheck size={13} strokeWidth={2.5} />
+            Escrow-protected splits
+          </span>
+
+          <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-[var(--neo-text)] sm:text-5xl lg:text-6xl">
+            Split subscriptions,
+            <br />
+            not{" "}
+            <span className="relative inline-block">
+              friendships
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 280 20"
+                className="absolute -bottom-1 left-0 w-full text-[var(--neo-green)]"
+              >
+                <path d="M2 14C60 4 220 4 278 14" stroke="currentColor" strokeWidth="10" fill="none" />
+              </svg>
+            </span>
+            .
+          </h1>
+
+          <p className="mt-6 max-w-md text-base leading-relaxed text-[var(--neo-muted)] sm:text-lg">
+            Host a pool for Netflix, Spotify, or Canva and get paid automatically —
+            or join one and never chase a friend for their share again. Funds sit in
+            escrow until everyone confirms access.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--neo-text)] bg-[var(--neo-green)] px-6 py-3 text-sm font-bold text-[#020617] shadow-[3px_3px_0_var(--neo-text)] transition hover:-translate-y-0.5"
+            >
+              Start a pool
+              <ArrowRight size={16} strokeWidth={2.5} />
+            </Link>
+            <Link
+              href="/marketplace"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--neo-text)] bg-[var(--neo-surface)] px-6 py-3 text-sm font-bold text-[var(--neo-text)] transition hover:-translate-y-0.5"
+            >
+              Browse open seats
+              <Users size={16} strokeWidth={2.5} />
+            </Link>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-wide text-[var(--neo-muted)]">
+              Works with
+            </span>
+            {PLATFORMS.map((platform) => (
+              <span key={platform} className="text-sm font-semibold text-[var(--neo-text)]">
+                {platform}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+          <div className="neo-activation"><div className="neo-activation-card"><div className="neo-activation-head"><span className="neo-netflix">N</span><div><b>Netflix Premium 4K</b><small>Split active</small></div><span className="neo-status">ACTIVE</span></div><div className="neo-queue-label"><span>SMART QUEUE</span><b>3/4 VERIFIED</b></div><div className="neo-queue"><span className="neo-avatar neo-avatar-1">H</span><span className="neo-avatar">C1</span><span className="neo-avatar neo-avatar-2">C2</span><span className="neo-joining">+<small>Joining...</small></span></div><div className="neo-split-tile"><div><small>TOTAL PLAN COST</small><strong>&#8377;649/mo</strong></div><ArrowRight size={22} /><div><small>YOUR SPLIT</small><strong>&#8377;162/mo</strong></div><span>75% SAVED</span></div><div className="neo-verified"><ShieldCheck size={18} /><span>VERIFICATION BOT STATUS: <b>SUCCESS</b></span><Check size={17} /></div></div></div>
+        </div>
+      </div>
+    </section>
 
     <section className="neo-trust-strip neo-shell" aria-label="Trusted subscription services"><div className="neo-trust-copy"><span className="neo-card-label">BUILT FOR BETTER SHARING</span><h2>Integrated with<br /><em>the Platforms You Love.</em></h2><p>Join verified subscription groups across the services you already use.</p></div><div className="neo-trust-ticker neo-exact-ticker"><SplitFlapLogoTicker /></div></section>
 
