@@ -32,6 +32,20 @@ export default function ProfileDropdown() {
     }
   }, [])
 
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <button className="flex items-center gap-1.5 rounded-full border border-[var(--dash-border)] bg-[var(--dash-surface-strong)] py-1 pl-1 pr-2.5 font-bold text-[var(--dash-ink)] transition">
+          <span className="grid size-7 place-items-center rounded-full bg-[var(--dash-violet)] font-black uppercase text-[var(--dash-violet-ink)] text-sm">
+            U
+          </span>
+          <span className="hidden text-xs font-semibold sm:block">Account</span>
+          <ChevronDown size={13} strokeWidth={2.5} className="text-[var(--dash-ink-soft)] rotate-0" />
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div ref={profileRef} className="relative">
       <button
