@@ -19,7 +19,7 @@ export const SERVICE_LOGO_MAP: Record<string, string> = {
   notion: "https://cdn.simpleicons.org/notion/000000",
 };
 
-/** Returns logo URL by matching service name against known  keywords. */
+/** Returns logo URL by matching service name against known   keywords. */
 export function resolveLogoUrl(
   platformLogoUrl: string | null | undefined,
   name: string
