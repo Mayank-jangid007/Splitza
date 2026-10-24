@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+});
 
 export const metadata: Metadata = {
   title: "Splitza — Split Any Subscription, Pay Only Your Share",
@@ -27,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${bricolage.variable} ${spaceMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

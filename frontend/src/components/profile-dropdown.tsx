@@ -12,8 +12,13 @@ import { useAuth } from "@/context/AuthContext"
 
 export default function ProfileDropdown() {
   const { user, logout } = useAuth()
+  const [mounted, setMounted] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     function closeProfile(event: MouseEvent) {

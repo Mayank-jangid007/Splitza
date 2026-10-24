@@ -4,6 +4,25 @@
 @import '../styles/components.css' layer(components);
 
 @theme {
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  
+  --color-sun: #f8c94f;
+  --color-blush: #f48ee3;
+  --color-mint: #8bea94;
+  --color-lilac: #cdaee8;
+  --color-peach: #ff9b63;
+  --color-foreground: #141414;
+  --color-background: #fbf7ee;
+  --color-border: #141414;
+  --color-ring: #141414;
+  --color-muted: #f1ebdd;
+  --color-card: #ffffff;
+  --shadow-brutal-sm: 2px 2px 0 0 #141414;
+  --shadow-brutal: 4px 4px 0 0 #141414;
+  --shadow-brutal-lg: 6px 6px 0 0 #141414;
+  --shadow-brutal-xl: 8px 8px 0 0 #141414;
+
   --animate-marquee-up: marquee-up var(--marquee-duration, 24s) linear infinite;
   --animate-marquee-down: marquee-down var(--marquee-duration, 24s) linear infinite;
 
@@ -26,6 +45,14 @@
       transform: translateY(0);
     }
   }
+}
+
+@utility bg-dots {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--foreground) 14%, transparent) 1.2px,
+    transparent 1.2px
+  );
+  background-size: 22px 22px;
 }
 
 /* ── View Transition: circle-reveal theme toggle ─────────────── */

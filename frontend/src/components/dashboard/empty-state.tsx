@@ -1,6 +1,8 @@
-"use client";
+'use client'
 
-import { type LucideIcon } from "lucide-react";
+import { motion } from 'motion/react'
+import { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export function EmptyState({
   dark,
@@ -10,33 +12,61 @@ export function EmptyState({
   actionLabel,
   onAction,
 }: {
-  dark: boolean;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  actionLabel?: string;
-  onAction?: () => void;
+  dark: boolean
+  icon: LucideIcon
+  title: string
+  description?: string
+  actionLabel?: string
+  onAction?: () => void
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[var(--dash-border)] px-6 py-16 text-center">
-      <span className="grid size-14 place-items-center rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] text-[var(--dash-ink-soft)]">
-        <Icon size={22} />
-      </span>
-      <div>
-        <p className="text-base font-bold text-[var(--dash-ink)]">{title}</p>
-        <p className="mt-1 max-w-xs text-sm text-[var(--dash-ink-soft)]">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className={cn(
+        'flex flex-col items-center justify-center rounded-3xl border-2 p-8 text-center sm:p-12',
+        dark
+          ? 'border-[var(--dash-border)] bg-[var(--dash-surface)]'
+          : 'border-[var(--dash-border)] bg-[var(--dash-surface)]',
+      )}
+    >
+      <div
+        className={cn(
+          'mb-6 grid size-16 place-items-center rounded-2xl',
+          dark
+            ? 'bg-[var(--dash-lime)] text-[var(--dash-lime-ink)]'
+            : 'bg-[var(--dash-lime)] text-[var(--dash-lime-ink)]',
+        )}
+      >
+        <Icon size={32} strokeWidth={1.5} />
+      </div>
+
+      <h3 className={cn('text-lg font-bold', dark ? 'text-[var(--dash-ink)]' : 'text-[var(--dash-ink)]')}>
+        {title}
+      </h3>
+
+      {description && (
+        <p className={cn('mt-2 max-w-xs text-sm', dark ? 'text-[var(--dash-ink-soft)]' : 'text-[var(--dash-ink-soft)]')}>
           {description}
         </p>
-      </div>
+      )}
+
       {actionLabel && onAction && (
-        <button
-          type="button"
+        <motion.button
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.2 }}
           onClick={onAction}
-          className="mt-2 rounded-2xl bg-[var(--dash-lime)] px-5 py-2.5 text-sm font-bold text-[var(--dash-lime-ink)] transition hover:opacity-90"
+          className={cn(
+            'mt-6 rounded-2xl px-6 py-3 text-sm font-bold transition',
+            dark
+              ? 'bg-[var(--dash-ink)] text-[var(--dash-canvas)] hover:bg-[var(--dash-ink)]/90'
+              : 'bg-[var(--dash-ink)] text-[var(--dash-canvas)] hover:bg-[var(--dash-ink)]/90',
+          )}
         >
           {actionLabel}
-        </button>
+        </motion.button>
       )}
-    </div>
-  );
+    </motion.div>
+  )
 }

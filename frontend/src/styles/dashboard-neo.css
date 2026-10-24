@@ -1,0 +1,34 @@
+.dashboard-neo {
+  --neo-background: #fbf7ee;
+  --neo-foreground: #141414;
+  --neo-border: #141414;
+  --neo-ring: #141414;
+
+  min-height: 100dvh;
+  background-color: var(--neo-background);
+  color: var(--neo-foreground);
+  font-family: var(--font-bricolage, "Outfit"), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Override body-level dark theme tokens inside the dashboard wrapper */
+.dashboard-neo {
+  --background: var(--neo-background);
+  --foreground: var(--neo-foreground);
+  --border: var(--neo-border);
+  --muted: #f1ebdd;
+}
+
+.dashboard-neo .bg-dots,
+.dashboard-neo.bg-dots {
+  background-color: var(--neo-background);
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--neo-foreground) 14%, transparent) 1.2px,
+    transparent 1.2px
+  );
+  background-size: 22px 22px;
+}
+
+.dashboard-neo ::selection {
+  background: var(--color-sun);
+  color: var(--neo-foreground);
+}
