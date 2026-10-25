@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, ChevronDown, LogOut, MessageSquare, Wallet, MessageSquarePlus } from 'lucide-react'
 import { neoFocus } from '@/lib/dashboard/neo'
 import { cn } from '@/lib/utils'
@@ -34,12 +34,18 @@ export function DashboardHeader({
   onLogout,
 }: DashboardHeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+
+  const displayName = mounted ? userName : ''
+  const displayInitial = mounted ? userInitial : ''
 
   return (
     <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-base font-semibold text-foreground/70">
-          Hello, {userName}
+          Hello, {displayName}
         </p>
         <h1 className="mt-1 text-4xl font-extrabold leading-none tracking-tight text-balance sm:text-5xl">
           Your shared pools
@@ -81,7 +87,7 @@ export function DashboardHeader({
           <button
             type="button"
             onClick={() => setProfileOpen(!profileOpen)}
-            aria-label={`Profile menu for ${userName}`}
+            aria-label={`Profile menu for ${displayName}`}
             aria-expanded={profileOpen}
             className={cn(iconButton, 'w-auto gap-2.5 bg-sun pl-1.5 pr-3.5')}
           >
@@ -89,9 +95,9 @@ export function DashboardHeader({
               aria-hidden="true"
               className="flex size-8 items-center justify-center rounded-full border-2 border-foreground bg-blush text-sm font-extrabold"
             >
-              {userInitial}
+              {displayInitial}
             </span>
-            <span className="hidden text-sm font-bold sm:inline">{userName}</span>
+            <span className="hidden text-sm font-bold sm:inline">{displayName}</span>
             <ChevronDown className={cn('size-4 transition-transform', profileOpen && 'rotate-180')} aria-hidden="true" />
           </button>
 
@@ -103,13 +109,14 @@ export function DashboardHeader({
                     onOpenProfile?.()
                     setProfileOpen(false)
                   }}
+                  aria-label={`Profile menu for ${displayName}`}
                   className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-background transition-colors"
                 >
                   <span className="flex size-8 items-center justify-center rounded-full border-2 border-foreground bg-blush text-xs font-extrabold">
-                    {userInitial}
+                    {displayInitial}
                   </span>
                   <div>
-                    <div className="font-bold">{userName}</div>
+                    <div className="font-bold">{displayName}</div>
                     <div className="text-xs text-foreground/70">View profile</div>
                   </div>
                 </button>

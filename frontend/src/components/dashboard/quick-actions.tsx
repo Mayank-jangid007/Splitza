@@ -64,6 +64,7 @@ export function QuickActions({
                 fill
                 sizes="(min-width: 1280px) 360px, (min-width: 640px) 50vw, 100vw"
                 className="object-cover"
+                loading="eager"
               />
             </span>
             <span className="flex items-start justify-between gap-4 p-4">
