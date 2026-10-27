@@ -11,6 +11,8 @@ import { MonoLabel } from './tag'
 interface NavCallbacks {
   onBrowse?: () => void
   onCreate?: () => void
+  onMyPools?: () => void
+  isBrowsing?: boolean
 }
 
 function navItems(routes: DashboardRoutes, cbs: NavCallbacks) {
@@ -20,7 +22,7 @@ function navItems(routes: DashboardRoutes, cbs: NavCallbacks) {
       sub: 'Find open seats',
       href: routes.marketplace,
       icon: Store,
-      active: false,
+      active: !!cbs.isBrowsing,
       onClick: cbs.onBrowse,
     },
     {
@@ -28,8 +30,8 @@ function navItems(routes: DashboardRoutes, cbs: NavCallbacks) {
       sub: 'Hosted & joined',
       href: routes.myPools,
       icon: Users,
-      active: true,
-      onClick: undefined,
+      active: !cbs.isBrowsing,
+      onClick: cbs.onMyPools,
     },
   ]
 }
@@ -78,8 +80,8 @@ export function CreateButton({
   )
 }
 
-export function DesktopSidebar({ routes, onBrowse, onCreate }: { routes: DashboardRoutes } & NavCallbacks) {
-  const items = navItems(routes, { onBrowse, onCreate })
+export function DesktopSidebar({ routes, onBrowse, onCreate, isBrowsing, onMyPools }: { routes: DashboardRoutes } & NavCallbacks) {
+  const items = navItems(routes, { onBrowse, onCreate, isBrowsing, onMyPools })
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r-2 border-foreground bg-background p-5 lg:flex">
       <Brand href={routes.home} className="px-1" />
@@ -161,8 +163,8 @@ export function MobileTopBar({ routes, onCreate }: { routes: DashboardRoutes; on
   )
 }
 
-export function MobileTabBar({ routes, onBrowse }: { routes: DashboardRoutes; onBrowse?: () => void }) {
-  const items = navItems(routes, { onBrowse })
+export function MobileTabBar({ routes, onBrowse, isBrowsing, onMyPools }: { routes: DashboardRoutes; onBrowse?: () => void; isBrowsing?: boolean; onMyPools?: () => void }) {
+  const items = navItems(routes, { onBrowse, isBrowsing, onMyPools })
   return (
     <nav
       aria-label="Primary"

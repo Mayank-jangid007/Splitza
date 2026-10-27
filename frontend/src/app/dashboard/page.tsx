@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
-import { MarketplaceView, type MarketplacePool } from "@/components/marketplace-view";
-import { MarketplaceHub } from "@/components/marketplace/marketplace-hub";
+import { type MarketplacePool } from "@/components/marketplace-view";
 import { JoinPage } from "@/components/join-page";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
 import { HostPlanDetails, type Service } from "@/components/hosted-plans";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
+import { Marketplace } from "@/components/splitza/marketplace";
 import { useAuth } from "@/context/AuthContext";
 import type { Pool, DashboardRoutes, EscrowStep } from "@/lib/dashboard/types";
 import { Check, Copy, Lock, MessageCircle, Send } from "lucide-react";
@@ -197,16 +197,6 @@ export default function Dashboard() {
     return <SharePage dark={false} onBack={() => setIsSharing(false)} onLaunch={handleLaunch} />;
   }
 
-  if (isBrowsing && !joiningPool) {
-    return (
-      <MarketplaceHub
-        onBack={() => setIsBrowsing(false)}
-        onCreate={() => { setIsBrowsing(false); setIsSharing(true); }}
-        onJoin={(pool) => setJoiningPool(pool)}
-      />
-    );
-  }
-
   if (joiningPool) {
     return (
       <JoinPage
@@ -243,11 +233,16 @@ export default function Dashboard() {
           sharePlan: "#create",
         }}
         onBrowseMarketplace={() => setIsBrowsing(true)}
+        onMyPools={() => setIsBrowsing(false)}
         onCreatePlan={() => setIsSharing(true)}
         onSharePlan={() => setIsSharing(true)}
         onLogout={logout}
         onOpenWallet={() => {/* TODO: open wallet */}}
         onOpenFeedback={() => {/* TODO: open feedback */}}
+        isBrowsing={isBrowsing}
+        marketplaceContent={isBrowsing ? (
+          <Marketplace onCreatePlan={() => { setIsBrowsing(false); setIsSharing(true); }} />
+        ) : undefined}
       />
 
       {/* Private pool live popup — kept as-is from original */}

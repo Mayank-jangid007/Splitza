@@ -18,32 +18,64 @@
   --color-ring: #141414;
   --color-muted: #f1ebdd;
   --color-card: #ffffff;
+
+  /* splitza neobrutalist tokens */
+  --color-cream: #fbf6ee;
+  --color-ink: #151515;
+  --color-bubble: #f28fe0;
+  --color-sky: #8fd3f4;
+
   --shadow-brutal-sm: 2px 2px 0 0 #141414;
   --shadow-brutal: 4px 4px 0 0 #141414;
   --shadow-brutal-lg: 6px 6px 0 0 #141414;
   --shadow-brutal-xl: 8px 8px 0 0 #141414;
+  --shadow-brut: 4px 4px 0 0 var(--color-ink);
+  --shadow-brut-sm: 3px 3px 0 0 var(--color-ink);
+  --shadow-brut-lg: 6px 6px 0 0 var(--color-ink);
 
   --animate-marquee-up: marquee-up var(--marquee-duration, 24s) linear infinite;
   --animate-marquee-down: marquee-down var(--marquee-duration, 24s) linear infinite;
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
 
   @keyframes marquee-up {
-    from {
-      transform: translateY(0);
-    }
-
-    to {
-      transform: translateY(-50%);
-    }
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
   }
-
   @keyframes marquee-down {
-    from {
-      transform: translateY(-50%);
-    }
+    from { transform: translateY(-50%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes shimmer-slide {
+    to { transform: translate(calc(100cqw - 100%), 0); }
+  }
+  @keyframes spin-around {
+    0% { transform: translateZ(0) rotate(0); }
+    15%, 35% { transform: translateZ(0) rotate(90deg); }
+    65%, 85% { transform: translateZ(0) rotate(270deg); }
+    100% { transform: translateZ(0) rotate(360deg); }
+  }
+}
 
-    to {
-      transform: translateY(0);
-    }
+@utility brut {
+  border: 2.5px solid var(--color-ink);
+  box-shadow: var(--shadow-brut);
+}
+
+@utility brut-sm {
+  border: 2px solid var(--color-ink);
+  box-shadow: var(--shadow-brut-sm);
+}
+
+@utility brut-press {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--color-ink);
+  }
+  &:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 var(--color-ink);
   }
 }
 

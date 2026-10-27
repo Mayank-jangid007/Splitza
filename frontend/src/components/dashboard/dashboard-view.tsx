@@ -27,11 +27,15 @@ interface DashboardViewProps {
   routes?: DashboardRoutes
   // action callbacks (replaces Link hrefs when provided)
   onBrowseMarketplace?: () => void
+  onMyPools?: () => void
   onCreatePlan?: () => void
   onSharePlan?: () => void
   onLogout?: () => void
   onOpenWallet?: () => void
   onOpenFeedback?: () => void
+  /** When provided, renders this content instead of the pools view */
+  marketplaceContent?: React.ReactNode
+  isBrowsing?: boolean
 }
 
 export function DashboardView({
@@ -40,11 +44,14 @@ export function DashboardView({
   unreadMessages = 0,
   routes = defaultRoutes,
   onBrowseMarketplace,
+  onMyPools,
   onCreatePlan,
   onSharePlan,
   onLogout,
   onOpenWallet,
   onOpenFeedback,
+  marketplaceContent,
+  isBrowsing = false,
 }: DashboardViewProps) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<PoolFilter>('all')
@@ -73,7 +80,9 @@ export function DashboardView({
       <DesktopSidebar
         routes={routes}
         onBrowse={onBrowseMarketplace}
+        onMyPools={onMyPools}
         onCreate={onCreatePlan}
+        isBrowsing={isBrowsing}
       />
       <MobileTopBar routes={routes} onCreate={onCreatePlan} />
 
@@ -83,51 +92,59 @@ export function DashboardView({
             unreadMessages={unreadMessages}
             userName={userName}
             userInitial={userName.charAt(0).toUpperCase()}
+            title={isBrowsing ? 'Marketplace Hub' : 'Your shared pools'}
+            showGreeting={!isBrowsing}
             onOpenWallet={onOpenWallet}
             onOpenFeedback={onOpenFeedback}
             onLogout={onLogout}
           />
 
-          <div className="mt-8">
-            <OverviewCard
-              pools={pools}
-              shareHref={routes.sharePlan}
-              joinHref={routes.marketplace}
-              onShare={onSharePlan}
-              onJoin={onBrowseMarketplace}
-            />
-          </div>
+          {marketplaceContent ? (
+            <div className="mt-8">{marketplaceContent}</div>
+          ) : (
+            <>
+              <div className="mt-8">
+                <OverviewCard
+                  pools={pools}
+                  shareHref={routes.sharePlan}
+                  joinHref={routes.marketplace}
+                  onShare={onSharePlan}
+                  onJoin={onBrowseMarketplace}
+                />
+              </div>
 
-          <div className="mt-8">
-            <PoolToolbar
-              query={query}
-              onQueryChange={setQuery}
-              filter={filter}
-              onFilterChange={setFilter}
-              counts={counts}
-            />
-          </div>
+              <div className="mt-8">
+                <PoolToolbar
+                  query={query}
+                  onQueryChange={setQuery}
+                  filter={filter}
+                  onFilterChange={setFilter}
+                  counts={counts}
+                />
+              </div>
 
-          <div className="mt-6 grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-            <PoolsSection
-              pools={filteredPools}
-              hasAnyPools={pools.length > 0}
-              createHref={routes.createPlan}
-              onCreate={onCreatePlan}
-              onSelectPool={setSelectedPool}
-              onViewAll={() => setAllPoolsOpen(true)}
-            />
-            <QuickActions
-              joinHref={routes.marketplace}
-              shareHref={routes.sharePlan}
-              onJoin={onBrowseMarketplace}
-              onShare={onSharePlan}
-            />
-          </div>
+              <div className="mt-6 grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+                <PoolsSection
+                  pools={filteredPools}
+                  hasAnyPools={pools.length > 0}
+                  createHref={routes.createPlan}
+                  onCreate={onCreatePlan}
+                  onSelectPool={setSelectedPool}
+                  onViewAll={() => setAllPoolsOpen(true)}
+                />
+                <QuickActions
+                  joinHref={routes.marketplace}
+                  shareHref={routes.sharePlan}
+                  onJoin={onBrowseMarketplace}
+                  onShare={onSharePlan}
+                />
+              </div>
+            </>
+          )}
         </main>
       </div>
 
-      <MobileTabBar routes={routes} onBrowse={onBrowseMarketplace} />
+      <MobileTabBar routes={routes} onBrowse={onBrowseMarketplace} onMyPools={onMyPools} isBrowsing={isBrowsing} />
 
       <AllPoolsDialog
         open={allPoolsOpen}

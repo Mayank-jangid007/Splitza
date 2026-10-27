@@ -9,6 +9,8 @@ interface DashboardHeaderProps {
   unreadMessages: number
   userName: string
   userInitial: string
+  title?: string
+  showGreeting?: boolean
   onOpenMessages?: () => void
   onOpenNotifications?: () => void
   onOpenProfile?: () => void
@@ -26,6 +28,8 @@ export function DashboardHeader({
   unreadMessages,
   userName,
   userInitial,
+  title = 'Your shared pools',
+  showGreeting = true,
   onOpenMessages,
   onOpenNotifications,
   onOpenProfile,
@@ -44,11 +48,13 @@ export function DashboardHeader({
   return (
     <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-base font-semibold text-foreground/70">
-          Hello, {displayName}
-        </p>
+        {showGreeting && (
+          <p className="text-base font-semibold text-foreground/70">
+            Hello, {displayName}
+          </p>
+        )}
         <h1 className="mt-1 text-4xl font-extrabold leading-none tracking-tight text-balance sm:text-5xl">
-          Your shared pools
+          {title}
         </h1>
       </div>
 
