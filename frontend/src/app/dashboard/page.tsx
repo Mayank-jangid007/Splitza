@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { MarketplaceView, type MarketplacePool } from "@/components/marketplace-view";
+import { MarketplaceHub } from "@/components/marketplace/marketplace-hub";
 import { JoinPage } from "@/components/join-page";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
 import { HostPlanDetails, type Service } from "@/components/hosted-plans";
@@ -198,8 +199,7 @@ export default function Dashboard() {
 
   if (isBrowsing && !joiningPool) {
     return (
-      <MarketplaceView
-        dark={false}
+      <MarketplaceHub
         onBack={() => setIsBrowsing(false)}
         onCreate={() => { setIsBrowsing(false); setIsSharing(true); }}
         onJoin={(pool) => setJoiningPool(pool)}

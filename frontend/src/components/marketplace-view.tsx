@@ -88,6 +88,122 @@ const accentClasses = {
   violet: "bg-[#B5BAFF] text-neutral-950",
 }
 
+// ─── Dummy data (shown when backend is empty or unreachable) ─────────────────
+const DUMMY_POOLS: MarketplacePool[] = [
+  {
+    id: 'dummy-1',
+    service: 'Netflix Premium 4K',
+    category: 'Entertainment',
+    term: 12,
+    price: 2199,
+    available: 2,
+    total: 4,
+    accent: 'red',
+    kind: 'PRE_STORED',
+    remainingDays: 214,
+    hostName: 'Priya S.',
+    logoUrl: 'https://cdn.simpleicons.org/netflix/E50914',
+  },
+  {
+    id: 'dummy-2',
+    service: 'Spotify Family',
+    category: 'Music',
+    term: 6,
+    price: 289,
+    available: 3,
+    total: 6,
+    accent: 'green',
+    kind: 'PRE_STORED',
+    remainingDays: 120,
+    hostName: 'Rahul M.',
+    logoUrl: 'https://cdn.simpleicons.org/spotify/1DB954',
+  },
+  {
+    id: 'dummy-3',
+    service: 'YouTube Premium',
+    category: 'Entertainment',
+    term: 12,
+    price: 799,
+    available: 1,
+    total: 5,
+    accent: 'red',
+    kind: 'PRE_STORED',
+    remainingDays: 300,
+    hostName: 'Ananya K.',
+    logoUrl: 'https://cdn.simpleicons.org/youtube/FF0000',
+  },
+  {
+    id: 'dummy-4',
+    service: 'ChatGPT Plus',
+    category: 'Others',
+    term: 3,
+    price: 1650,
+    available: 2,
+    total: 5,
+    accent: 'blue',
+    kind: 'CUSTOM',
+    remainingDays: 62,
+    hostName: 'Vikram T.',
+    logoUrl: 'https://cdn.simpleicons.org/openai/000000',
+  },
+  {
+    id: 'dummy-5',
+    service: 'Notion Plus',
+    category: 'Others',
+    term: 12,
+    price: 799,
+    available: 1,
+    total: 3,
+    accent: 'violet',
+    kind: 'PRE_STORED',
+    remainingDays: 180,
+    hostName: 'Sneha R.',
+    logoUrl: 'https://cdn.simpleicons.org/notion/000000',
+  },
+  {
+    id: 'dummy-6',
+    service: 'Adobe Creative Cloud',
+    category: 'Others',
+    term: 12,
+    price: 4999,
+    available: 2,
+    total: 3,
+    accent: 'red',
+    kind: 'PRE_STORED',
+    remainingDays: 240,
+    hostName: 'Arjun D.',
+    logoUrl: 'https://cdn.simpleicons.org/adobe/FF0000',
+  },
+  {
+    id: 'dummy-7',
+    service: 'Microsoft 365',
+    category: 'Cloud',
+    term: 12,
+    price: 999,
+    available: 3,
+    total: 6,
+    accent: 'blue',
+    kind: 'PRE_STORED',
+    remainingDays: 310,
+    hostName: 'Karan P.',
+    logoUrl: 'https://cdn.simpleicons.org/microsoft/0078D4',
+  },
+  {
+    id: 'dummy-8',
+    service: 'Duolingo Super',
+    category: 'Education',
+    term: 6,
+    price: 599,
+    available: 4,
+    total: 6,
+    accent: 'violet',
+    kind: 'PRE_STORED',
+    remainingDays: 95,
+    hostName: 'Meera L.',
+    logoUrl: 'https://cdn.simpleicons.org/duolingo/58CC02',
+  },
+]
+
 // ─── Pool Card ──────────────
 function PoolCard({ pool, onJoin, dark }: { pool: MarketplacePool; onJoin: (pool: MarketplacePool) => void; dark: boolean }) {
   const filledSeats = pool.total - pool.available
@@ -187,10 +303,18 @@ export function MarketplaceView({
       setError(null)
       try {
         const res = await poolsApi.getMarketplace({ search: query || undefined })
-        if (res.ok) setRawPools(res.data.map(mapApiPool))
-        else setError("Failed to load pools.")
+        if (res.ok && res.data.length > 0) {
+          setRawPools(res.data.map(mapApiPool))
+        } else {
+          // Fallback dummy data so the marketplace always has content
+          setRawPools(DUMMY_POOLS.filter(p =>
+            !query || p.service.toLowerCase().includes(query.toLowerCase()) || p.hostName.toLowerCase().includes(query.toLowerCase())
+          ))
+        }
       } catch {
-        setError("Could not connect to server.")
+        setRawPools(DUMMY_POOLS.filter(p =>
+          !query || p.service.toLowerCase().includes(query.toLowerCase())
+        ))
       } finally {
         setLoading(false)
       }

@@ -1,7 +1,6 @@
 import type { Pool } from '@/lib/dashboard/types'
 import { neoFocus } from '@/lib/dashboard/neo'
 import { cn } from '@/lib/utils'
-import { PoolSearch } from './pool-search'
 
 export type PoolFilter = 'all' | 'hosted' | 'joined'
 
@@ -33,12 +32,6 @@ export function PoolToolbar({
 }: PoolToolbarProps) {
   return (
     <div className="space-y-4">
-      <PoolSearch
-        value={query}
-        onChange={onQueryChange}
-        placeholder="Search pools, hosts..."
-        label="Search pools and hosts"
-      />
       <div
         role="group"
         aria-label="Filter pools by role"
