@@ -240,7 +240,8 @@ export type Pool = {
   status: string;
   visibility?: "PUBLIC" | "PRIVATE";
   planMonths: number;
-  startDate?: string; // ISO string — for daysLeft calculation
+  startDate?: string;
+  role?: "HOST" | "MEMBER"; // actual role of the current user in this pool
 };
 
 export type MarketplacePoolItem = {

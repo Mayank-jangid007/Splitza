@@ -130,32 +130,42 @@ export async function handleGetMyPools(
 ): Promise<void> {
   try {
     const userId = (req as any).user!.id;
-    
-    // Fetch pools hosted by the user
-    const hostedPools = await prisma.splitPool.findMany({
-      where: { hostId: userId },
-      orderBy: { createdAt: "desc" },
+
+    // Fetch all memberships for this user (includes both HOST and MEMBER roles)
+    const memberships = await prisma.membership.findMany({
+      where: { userId, status: { not: "REMOVED" } },
       include: {
-        host: { select: { name: true } }
-      }
+        pool: {
+          include: {
+            host: { select: { name: true } },
+            memberships: { where: { status: "ACTIVE" }, select: { id: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
     });
-    
-    // Map them to the frontend Pool format
-    const formattedPools = hostedPools.map(p => ({
-      id: p.id,
-      name: p.customName || p.platformConfigId || "Split Pool",
-      host: p.host.name || "You",
-      pricePerSeat: Number(p.pricePerSeat),
-      maxSeats: p.maxSeats,
-      filledSeats: 1, // simplified for now
-      status: p.status,
-      visibility: p.visibility,
-      planMonths: p.planMonths,
-    }));
-    
+
+    const formattedPools = memberships.map((m) => {
+      const p = m.pool;
+      const filledSeats = p.memberships.length;
+      return {
+        id: p.id,
+        name: p.customName || p.platformConfigId || "Split Pool",
+        host: m.role === "HOST" ? "You" : p.host.name,
+        pricePerSeat: Number(p.pricePerSeat),
+        maxSeats: p.maxSeats,
+        filledSeats,
+        status: p.status,
+        visibility: p.visibility,
+        planMonths: p.planMonths,
+        startDate: p.startDate?.toISOString(),
+        role: m.role, // "HOST" | "MEMBER"
+      };
+    });
+
     res.status(200).json({
       ok: true,
-      data: formattedPools
+      data: formattedPools,
     });
   } catch (err) {
     console.error("[GET /api/pools/my] Unhandled error:", err);

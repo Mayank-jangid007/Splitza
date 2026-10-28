@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CATEGORIES, POOLS, type Category, type Pool } from '@/lib/pools'
+import type { MarketplacePool } from '@/components/marketplace-view'
 import { HeroBanner } from './hero-banner'
 import { PoolCard } from './pool-card'
 import { PoolDetailDialog } from './pool-detail-dialog'
@@ -25,9 +26,10 @@ const FILTER_STYLES: Record<Filter, { icon: LucideIcon; bg: string }> = {
 
 interface MarketplaceProps {
   onCreatePlan?: () => void
+  onJoin?: (pool: MarketplacePool) => void
 }
 
-export function Marketplace({ onCreatePlan }: MarketplaceProps) {
+export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('All')
   const [selected, setSelected] = useState<Pool | null>(null)
@@ -159,6 +161,23 @@ export function Marketplace({ onCreatePlan }: MarketplaceProps) {
         seatsLeft={selected ? selected.seatsLeft : 0}
         joined={false}
         onClose={() => setSelected(null)}
+        onJoin={(pool) => {
+          setSelected(null)
+          onJoin?.({
+            id: pool.id,
+            service: pool.service,
+            category: pool.category,
+            term: pool.cycleDays / 30,
+            price: Math.ceil(pool.totalCost / pool.totalSeats),
+            available: pool.seatsLeft,
+            total: pool.totalSeats,
+            accent: 'green' as const,
+            kind: 'PRE_STORED' as const,
+            remainingDays: pool.daysLeft,
+            hostName: pool.host,
+            logoUrl: pool.logo,
+          })
+        }}
       />
     </div>
   )

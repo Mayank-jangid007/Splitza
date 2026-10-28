@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   CalendarClock, Check, Loader2, Quote, Receipt,
@@ -17,10 +16,10 @@ type PoolDetailDialogProps = {
   seatsLeft: number
   joined: boolean
   onClose: () => void
+  onJoin?: (pool: Pool) => void
 }
 
-export function PoolDetailDialog({ pool, seatsLeft, joined, onClose }: PoolDetailDialogProps) {
-  const router = useRouter()
+export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: PoolDetailDialogProps) {
   const [pending, setPending] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
@@ -38,8 +37,10 @@ export function PoolDetailDialog({ pool, seatsLeft, joined, onClose }: PoolDetai
 
   const handleJoin = () => {
     if (!pool) return
-    setPending(true)
-    router.push(`/pool/${pool.id}/pay`)
+    if (onJoin) {
+      setPending(true)
+      onJoin(pool)
+    }
   }
 
   return (

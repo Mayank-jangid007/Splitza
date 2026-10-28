@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { type MarketplacePool } from "@/components/marketplace-view";
-import { JoinPage } from "@/components/join-page";
+import { EscrowCheckout } from "@/components/splitza/escrow-checkout";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
 import { HostPlanDetails, type Service } from "@/components/hosted-plans";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
@@ -125,7 +125,7 @@ export default function Dashboard() {
             const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
             return {
               name: poolName,
-              host: p.host || p.hostName || "Host",
+              host: p.role === "HOST" ? "You" : (p.host || p.hostName || "Host"),
               price: p.pricePerSeat,
               capacity: p.maxSeats,
               filled: p.filledSeats || 0,
@@ -199,10 +199,9 @@ export default function Dashboard() {
 
   if (joiningPool) {
     return (
-      <JoinPage
+      <EscrowCheckout
         pool={joiningPool}
-        dark={false}
-        onBack={() => setJoiningPool(null)}
+        onBack={() => { setJoiningPool(null); setIsBrowsing(true); }}
       />
     );
   }
@@ -241,7 +240,10 @@ export default function Dashboard() {
         onOpenFeedback={() => {/* TODO: open feedback */}}
         isBrowsing={isBrowsing}
         marketplaceContent={isBrowsing ? (
-          <Marketplace onCreatePlan={() => { setIsBrowsing(false); setIsSharing(true); }} />
+          <Marketplace
+            onCreatePlan={() => { setIsBrowsing(false); setIsSharing(true); }}
+            onJoin={(pool) => { setIsBrowsing(false); setJoiningPool(pool); }}
+          />
         ) : undefined}
       />
 
