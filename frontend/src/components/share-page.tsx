@@ -34,6 +34,12 @@ export type LaunchPlanDetails = {
   isPrivate: boolean;
   tier?: string;
   logoUrl?: string;
+  hostUpiId?: string;
+  credentials?: {
+    username?: string;
+    password?: string;
+    inviteLink?: string;
+  };
 };
 
 export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: () => void; onLaunch?: (details: LaunchPlanDetails) => void }) {
@@ -265,7 +271,21 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                   <div className="mt-8 grid gap-3">
                     <label className="grid gap-2">
                       <span className="flex items-center gap-2 font-mono text-[10px] font-black tracking-[.14em] text-slate-400"><Wallet size={13} /> UPI ID</span>
-                      <input value={upi} onChange={event => setUpi(event.target.value)} placeholder="yourname@upi" className="rounded-xl border-[3px] border-slate-700 bg-slate-900 px-4 py-4 font-mono text-sm outline-none transition focus:border-emerald-300 text-white" />
+                      <input
+                        value={upi}
+                        onChange={event => setUpi(event.target.value)}
+                        placeholder="yourname@okaxis"
+                        className={`rounded-xl border-[3px] bg-slate-900 px-4 py-4 font-mono text-sm outline-none transition text-white ${
+                          upi && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi.trim())
+                            ? 'border-red-500 focus:border-red-400'
+                            : 'border-slate-700 focus:border-emerald-300'
+                        }`}
+                      />
+                      {upi && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi.trim()) && (
+                        <span className="font-mono text-[11px] font-bold text-red-400">
+                          Invalid UPI ID — use format like yourname@okaxis or yourname@ybl
+                        </span>
+                      )}
                     </label>
                     <p className="font-mono text-[10px] text-slate-500">You&apos;ll receive ₹{Math.max(0, Math.round(price / Math.max(1, limit)))} per member each cycle.</p>
                   </div>
@@ -323,6 +343,12 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                       isPrivate: visibility === "private",
                       tier: custom ? undefined : selected?.tier,
                       logoUrl: custom ? undefined : selected?.logoUrl,
+                      hostUpiId: upi.trim() || undefined,
+                      credentials: {
+                        username: username.trim() || undefined,
+                        password: password.trim() || undefined,
+                        inviteLink: inviteLink.trim() || undefined,
+                      },
                     })
                   }
                 }}

@@ -10,6 +10,10 @@ import {
   type CreatePoolInput,
 } from "../services/createPool.service";
 import { joinPool } from "../services/joinPool.service";
+import {
+  getPoolCredentials,
+  CredentialAccessError,
+} from "../services/credential.service";
 import { prisma } from "../lib/prisma";
 
 // ─────────────────────────────────────────────
@@ -92,14 +96,31 @@ export async function handleJoinPool(
       inviteToken,
     });
 
+    // After payment succeeds membership is ACTIVE — unlock credentials
+    let credentials: Awaited<ReturnType<typeof getPoolCredentials>> | null = null;
+    try {
+      credentials = await getPoolCredentials(poolId, userId);
+    } catch {
+      credentials = null; // host may not have uploaded creds yet
+    }
+
     res.status(200).json({
       ok: true,
       data: {
         membershipId: result.membership.id,
-        status: result.membership.status,
+        status: "ACTIVE",
         paymentReceipt: result.paymentReceipt,
         poolStatus: result.poolStatus,
         openSeatsLeft: result.openSeatsLeft,
+        credentials: credentials
+          ? {
+              username: credentials.username,
+              password: credentials.password,
+              inviteLink: credentials.inviteLink,
+              seatNo: credentials.seatNo,
+              pin: credentials.pin,
+            }
+          : null,
       },
     });
   } catch (err) {
@@ -117,6 +138,60 @@ export async function handleJoinPool(
       ok: false,
       code: "INTERNAL_ERROR",
       message: "An unexpected error occurred while joining the pool. Please try again.",
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+//  GET /api/pools/:poolId/credentials
+//  Host or ACTIVE paid member only — returns decrypted creds
+// ─────────────────────────────────────────────
+
+export async function handleGetPoolCredentials(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { poolId } = req.params;
+    const userId = (req as any).user!.id;
+
+    if (!poolId) {
+      res.status(400).json({
+        ok: false,
+        code: "MISSING_POOL_ID",
+        message: "Pool ID is required.",
+      });
+      return;
+    }
+
+    const creds = await getPoolCredentials(poolId, userId);
+
+    res.status(200).json({
+      ok: true,
+      data: {
+        username: creds.username,
+        password: creds.password,
+        inviteLink: creds.inviteLink,
+        seatNo: creds.seatNo,
+        pin: creds.pin,
+      },
+    });
+  } catch (err) {
+    if (err instanceof CredentialAccessError || err instanceof PoolServiceError) {
+      const e = err as CredentialAccessError | PoolServiceError;
+      res.status(e.statusHint).json({
+        ok: false,
+        code: e.code,
+        message: e.message,
+      });
+      return;
+    }
+
+    console.error(`[GET /api/pools/${req.params.poolId}/credentials] Unhandled error:`, err);
+    res.status(500).json({
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Failed to fetch credentials.",
     });
   }
 }

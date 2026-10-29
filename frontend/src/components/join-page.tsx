@@ -235,3 +235,67 @@ export function JoinPage({ pool, dark, onBack }: { pool: MarketplacePool; dark: 
     </main>
   )
 }
+onDashboard = {() => setStage("dashboard")}
+          />
+        );
+      case "dashboard":
+return (
+  <StageDashboard
+    pool={pool} fairPrice={fairPrice} seatNo={seatNo}
+    username={MOCK_CREDS.username}
+    password={MOCK_CREDS.password}
+    pin={MOCK_CREDS.pin}
+    reference={MOCK_CREDS.reference}
+  />
+);
+    }
+  };
+
+const showSidebar = stage !== "dashboard" && reviewDone;
+
+return (
+  <main className="min-h-screen bg-[#fbf6ee] px-4 py-6 font-sans sm:px-6">
+    <style>{`
+        @keyframes rise {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        section[aria-label], aside[aria-label] { animation: rise .32s ease both; }
+      `}</style>
+
+    <div className="mx-auto max-w-5xl">
+      {/* topbar */}
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <button type="button" onClick={onBack}
+          className={`${BTN} bg-white px-4 text-sm font-extrabold shadow-[2px_2px_0_0_#151515]`}
+        >
+          <Icon name="back" size={16} />
+          Back
+        </button>
+        <span className={`${MONO} hidden text-xs font-bold text-[#7a7670] sm:block`}>
+          Splitza · Secure checkout
+        </span>
+      </div>
+
+      {/* stepper */}
+      {reviewDone && (
+        <div className="mb-5">
+          <Stepper current={stage} />
+        </div>
+      )}
+
+      {/* layout */}
+      <div className="flex flex-wrap items-start gap-5">
+        <div className="min-w-0 flex-[2_1_380px]">{mainContent()}</div>
+        {showSidebar && (
+          <Summary
+            pool={pool} fairPrice={fairPrice}
+            paid={stage === "done" || stage === "dashboard"}
+            reference={MOCK_CREDS.reference}
+          />
+        )}
+      </div>
+    </div>
+  </main>
+);
+}

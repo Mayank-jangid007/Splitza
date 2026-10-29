@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, AtSign, Loader2, Lock, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { AtSign, Loader2, Lock, ShieldCheck, TriangleAlert, X } from 'lucide-react'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { cn } from '@/lib/utils'
 import type { MarketplacePool } from '@/components/marketplace-view'
@@ -13,50 +14,45 @@ const UPI_HANDLES = ['@okaxis', '@oksbi', '@ybl', '@paytm', '@upi']
 
 type Status = 'idle' | 'processing' | 'locked'
 
-// Adapt MarketplacePool → the shape EscrowSuccess/Summary expect
-function toPoolShape(p: MarketplacePool) {
-  return {
-    id: p.id,
-    name: p.service,
-    service: p.service,
-    category: p.category as any,
-    host: p.hostName,
-    hostHandle: '',
-    logo: p.logoUrl ?? '',
-    totalCost: p.price * p.total,
-    totalSeats: p.total,
-    seatsLeft: p.available,
-    daysLeft: p.remainingDays,
-    cycleDays: p.term * 30,
-    tone: 'sun' as const,
-    perks: [],
-    description: '',
-    rules: [],
-    hostRating: 4.8,
-    hostPools: 1,
-  }
-}
-
 interface EscrowCheckoutProps {
-  pool: MarketplacePool
-  onBack: () => void
+  pool: MarketplacePool | null
+  onClose: () => void
 }
 
-export function EscrowCheckout({ pool, onBack }: EscrowCheckoutProps) {
+export function EscrowCheckout({ pool, onClose }: EscrowCheckoutProps) {
   const [upiId, setUpiId] = useState('')
   const [touched, setTouched] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [reference, setReference] = useState('')
   const timer = useRef<number | undefined>(undefined)
+  const closeRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => () => window.clearTimeout(timer.current), [])
+  useEffect(() => {
+    if (!pool) {
+      setUpiId('')
+      setTouched(false)
+      setStatus('idle')
+      setReference('')
+      return
+    }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    document.body.style.overflow = 'hidden'
+    setTimeout(() => closeRef.current?.focus(), 50)
+    return () => {
+      document.removeEventListener('keydown', handler)
+      document.body.style.overflow = ''
+      window.clearTimeout(timer.current)
+    }
+  }, [pool, onClose])
+
+  if (!pool) return null
 
   const trimmed = upiId.trim()
   const valid = UPI_PATTERN.test(trimmed)
   const showError = touched && !valid
   const locked = status === 'locked'
-  const splitAmount = Math.ceil((pool.price * pool.total) / pool.total)
-  const poolShape = toPoolShape(pool)
+  const splitAmount = Math.ceil(pool.price)
 
   const applyHandle = (handle: string) => {
     const name = upiId.split('@')[0]
@@ -74,31 +70,63 @@ export function EscrowCheckout({ pool, onBack }: EscrowCheckoutProps) {
     }, 1800)
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      {!locked && (
-        <button type="button" onClick={onBack}
-          className="flex w-fit items-center gap-2 rounded-full border-2 border-foreground bg-white px-4 py-2 text-sm font-bold transition-transform hover:-translate-x-0.5">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Back to marketplace
-        </button>
-      )}
+  const poolShape = {
+    id: pool.id,
+    name: pool.service,
+    service: pool.service,
+    category: pool.category as any,
+    host: pool.hostName,
+    hostHandle: '',
+    logo: pool.logoUrl ?? '',
+    totalCost: pool.price * pool.total,
+    totalSeats: pool.total,
+    seatsLeft: pool.available,
+    daysLeft: pool.remainingDays,
+    cycleDays: pool.term * 30,
+    tone: 'sun' as const,
+    perks: [],
+    description: '',
+    rules: [],
+    hostRating: 4.8,
+    hostPools: 1,
+  }
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex flex-col gap-6">
+  return (
+    <AnimatePresence>
+      <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        onClick={onClose} aria-hidden="true" />
+
+      <motion.div key="dialog" role="dialog" aria-modal="true" aria-label="Secure escrow payment"
+        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        className="brut fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] bg-cream p-0"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 border-b-[2.5px] border-ink bg-sun p-5">
+          <div>
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-ink/60">Secure escrow</p>
+            <h2 className="mt-0.5 text-2xl font-extrabold tracking-tight">{pool.service}</h2>
+          </div>
+          <button ref={closeRef} type="button" aria-label="Close" onClick={onClose}
+            className="brut-sm flex size-10 shrink-0 items-center justify-center rounded-full bg-white">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col gap-6 p-5">
           <EscrowTracker current={locked ? 1 : 0} />
 
           {locked ? (
-            <EscrowSuccess pool={poolShape} upiId={trimmed} reference={reference} onBack={onBack} />
+            <EscrowSuccess pool={poolShape} upiId={trimmed} reference={reference} onBack={onClose} />
           ) : (
             <form onSubmit={handleSubmit} noValidate aria-label="Authorize UPI payment"
-              className="brut flex flex-col gap-6 rounded-[2rem] bg-sun p-5 sm:p-7">
+              className="brut flex flex-col gap-6 rounded-[2rem] bg-sun p-5">
               <div className="flex flex-col gap-1">
-                <h2 className="text-2xl font-extrabold tracking-tight">Pay with UPI</h2>
+                <h3 className="text-xl font-extrabold tracking-tight">Pay with UPI</h3>
                 <p className="text-sm font-medium text-ink/75">
-                  Enter your UPI ID and approve the request to lock{' '}
-                  <span className="font-mono font-bold">INR {splitAmount.toLocaleString('en-IN')}</span>{' '}
-                  in escrow.
+                  Lock <span className="font-mono font-bold">INR {splitAmount.toLocaleString('en-IN')}</span> in escrow.
                 </p>
               </div>
 
@@ -106,32 +134,21 @@ export function EscrowCheckout({ pool, onBack }: EscrowCheckoutProps) {
                 <label htmlFor="upi-id" className="text-sm font-bold">Your UPI ID</label>
                 <div className="relative">
                   <AtSign className="pointer-events-none absolute top-1/2 left-5 size-5 -translate-y-1/2 text-ink/60" aria-hidden="true" />
-                  <input
-                    id="upi-id"
-                    name="upi"
-                    type="text"
-                    inputMode="email"
-                    autoComplete="off"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="yourname@okaxis"
-                    value={upiId}
+                  <input id="upi-id" name="upi" type="text" inputMode="email"
+                    autoComplete="off" autoCapitalize="none" spellCheck={false}
+                    placeholder="yourname@okaxis" value={upiId}
                     disabled={status === 'processing'}
                     onChange={(e) => setUpiId(e.target.value)}
                     onBlur={() => upiId && setTouched(true)}
                     aria-invalid={showError}
                     aria-describedby={showError ? 'upi-error' : 'upi-hint'}
-                    className={cn(
-                      'h-14 w-full rounded-full border-[2.5px] border-ink bg-white pr-5 pl-12 font-mono text-base font-semibold shadow-brut-sm outline-none transition-[box-shadow] focus-visible:ring-4 focus-visible:ring-ink/20',
-                      showError && 'border-destructive',
-                    )}
-                  />
+                    className={cn('h-14 w-full rounded-full border-[2.5px] border-ink bg-white pr-5 pl-12 font-mono text-base font-semibold shadow-brut-sm outline-none',
+                      showError && 'border-destructive')} />
                 </div>
 
                 {showError ? (
                   <p id="upi-error" role="alert" className="flex items-center gap-1.5 text-sm font-bold text-destructive">
-                    <TriangleAlert className="size-4" aria-hidden="true" />
-                    Enter a valid UPI ID, like name@okaxis.
+                    <TriangleAlert className="size-4" /> Enter a valid UPI ID, like name@okaxis.
                   </p>
                 ) : (
                   <p id="upi-hint" className="text-xs font-medium text-ink/70">Tap a handle to finish your ID faster.</p>
@@ -149,76 +166,39 @@ export function EscrowCheckout({ pool, onBack }: EscrowCheckoutProps) {
                 </ul>
               </div>
 
+              {/* Summary row */}
+              <div className="flex items-center justify-between rounded-2xl border-2 border-ink bg-white p-4">
+                <div>
+                  <p className="text-xs font-bold text-ink/60 uppercase tracking-wide">Your split</p>
+                  <p className="font-mono text-2xl font-bold">
+                    INR {splitAmount.toLocaleString('en-IN')}
+                    <span className="text-sm font-normal text-ink/60">/mo</span>
+                  </p>
+                </div>
+                <div className="text-right text-xs text-ink/60">
+                  <p>{pool.total} members</p>
+                  <p>{pool.remainingDays} days left</p>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-3">
                 <ShimmerButton type="submit" disabled={status === 'processing'}
                   shimmerColor="#f7c85a" background="#151515"
-                  className="h-14 w-full text-base font-extrabold shadow-[4px_4px_0_0_#f28fe0] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 disabled:opacity-80">
+                  className="h-14 w-full text-base font-extrabold shadow-[4px_4px_0_0_#f28fe0] disabled:opacity-80">
                   {status === 'processing' ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                      Approve the request in your UPI app
-                    </span>
+                    <span className="flex items-center gap-2"><Loader2 className="size-5 animate-spin" />Approve in your UPI app</span>
                   ) : (
-                    <span className="flex items-center gap-2">
-                      <Lock className="size-5" aria-hidden="true" />
-                      Lock INR {splitAmount.toLocaleString('en-IN')} in escrow
-                    </span>
+                    <span className="flex items-center gap-2"><Lock className="size-5" />Lock INR {splitAmount.toLocaleString('en-IN')} in escrow</span>
                   )}
                 </ShimmerButton>
                 <p className="flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-ink/75">
-                  <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-                  By confirming, you authorize Splitza to collect this amount and hold it in escrow.
+                  <ShieldCheck className="size-4 shrink-0" /> By confirming, you authorize Splitza to hold this in escrow.
                 </p>
               </div>
             </form>
           )}
         </div>
-
-        {/* Summary sidebar */}
-        <aside aria-label="Payment summary" className="brut flex flex-col overflow-hidden rounded-[2rem] bg-white xl:sticky xl:top-6">
-          <div className="flex items-center gap-3 border-b-[2.5px] border-ink bg-sun p-5">
-            {pool.logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={pool.logoUrl} alt="" className="size-12 rounded-full border-2 border-ink bg-white object-contain p-1.5" />
-            )}
-            <div className="flex min-w-0 flex-col">
-              <span className="text-xs font-bold tracking-wide text-ink/70 uppercase">You are joining</span>
-              <h2 className="truncate text-xl font-extrabold tracking-tight">{pool.service}</h2>
-              <p className="truncate text-sm font-semibold text-ink/70">Hosted by {pool.hostName}</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-5 p-5">
-            <h3 className="text-base font-extrabold">Payment summary</h3>
-            <dl className="flex flex-col gap-3 text-sm">
-              <SummaryRow label="Plan cost" value={`INR ${(pool.price * pool.total).toLocaleString('en-IN')}`} suffix="/mo" />
-              <SummaryRow label="Members splitting" value={`${pool.total} people`} />
-              <SummaryRow label="Your split" value={`INR ${splitAmount.toLocaleString('en-IN')}`} suffix="/mo" strong />
-            </dl>
-            <div className="border-t-2 border-dashed border-ink/30" />
-            <div className="flex items-end justify-between gap-3">
-              <span className="font-bold">{locked ? 'Locked in escrow' : 'Due today'}</span>
-              <span className="font-mono text-3xl font-bold">INR {splitAmount.toLocaleString('en-IN')}</span>
-            </div>
-            <p className="flex items-start gap-2 rounded-2xl border-2 border-ink bg-mint p-3 text-xs font-semibold leading-snug">
-              {locked
-                ? <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                : <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
-              The host is paid only after your seat is verified as active.
-            </p>
-          </div>
-        </aside>
-      </div>
-    </div>
-  )
-}
-
-function SummaryRow({ label, value, suffix, strong }: { label: string; value: string; suffix?: string; strong?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="font-medium text-ink/70">{label}</dt>
-      <dd className={cn('font-mono', strong ? 'text-base font-bold' : 'font-semibold')}>
-        {value}{suffix && <span className="font-sans text-xs text-ink/60">{suffix}</span>}
-      </dd>
-    </div>
+      </motion.div>
+    </AnimatePresence>
   )
 }

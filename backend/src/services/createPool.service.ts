@@ -18,6 +18,7 @@ import type {
   IPoolCredential,
   ISplitPool,
 } from "../types/db.types";
+import { buildCredentialPayload } from "./credential.service";
 
 // ─────────────────────────────────────────────
 //  Service-level Error
@@ -100,30 +101,6 @@ const MIN_PRICE_INR        = 1;
  */
 function generateSecureToken(): string {
   return randomBytes(INVITE_TOKEN_BYTES).toString("hex");
-}
-
-/**
- * Naive AES-256-GCM envelope — replace with your KMS client in production.
- * Returns { ciphertext, iv, keyId } all as base64 strings.
- */
-async function encryptField(
-  plaintext: string
-): Promise<{ ciphertext: string; iv: string; keyId: string }> {
-  const { createCipheriv } = await import("crypto");
-
-  // In production: fetch key bytes from AWS KMS / GCP KMS / Vault
-  const key = Buffer.from(process.env.CREDENTIAL_ENCRYPTION_KEY!, "hex"); // 32-byte hex key
-  const iv  = randomBytes(16);
-
-  const cipher     = createCipheriv("aes-256-gcm", key, iv);
-  const encrypted  = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const authTag    = cipher.getAuthTag();
-
-  return {
-    ciphertext: Buffer.concat([encrypted, authTag]).toString("base64"),
-    iv: iv.toString("base64"),
-    keyId: process.env.CREDENTIAL_KEY_ID ?? "local-dev-key-v1",
-  };
 }
 
 /** Round a Decimal to 2 decimal places and return as Decimal */
@@ -251,51 +228,7 @@ function validateCustomInput(input: CustomPoolInput): void {
   }
 }
 
-// ─────────────────────────────────────────────
-//  Credential Encryption Helper
-// ─────────────────────────────────────────────
-
-async function buildCredentialPayload(
-  poolId: string,
-  creds: BasePoolInput["credentials"]
-): Promise<Parameters<typeof prisma.poolCredential.create>[0]["data"] | null> {
-  if (!creds || (!creds.username && !creds.password && !creds.inviteLink)) {
-    return null;
-  }
-
-  // Encrypt each provided field independently; they share the same IV batch
-  let encryptedUsername: string | undefined;
-  let encryptedPassword: string | undefined;
-  let encryptedInviteLink: string | undefined;
-  let sharedIv = "";
-  let sharedKeyId = "";
-
-  if (creds.username) {
-    const enc = await encryptField(creds.username);
-    encryptedUsername = enc.ciphertext;
-    sharedIv    = enc.iv;
-    sharedKeyId = enc.keyId;
-  }
-  if (creds.password) {
-    const enc = await encryptField(creds.password);
-    encryptedPassword = enc.ciphertext;
-    if (!sharedIv) { sharedIv = enc.iv; sharedKeyId = enc.keyId; }
-  }
-  if (creds.inviteLink) {
-    const enc = await encryptField(creds.inviteLink);
-    encryptedInviteLink = enc.ciphertext;
-    if (!sharedIv) { sharedIv = enc.iv; sharedKeyId = enc.keyId; }
-  }
-
-  return {
-    poolId,
-    encryptedUsername:   encryptedUsername  ?? null,
-    encryptedPassword:   encryptedPassword  ?? null,
-    encryptedInviteLink: encryptedInviteLink ?? null,
-    iv:             sharedIv,
-    encryptionKeyId: sharedKeyId,
-  };
-}
+// Credential encryption lives in credential.service.ts
 
 // ─────────────────────────────────────────────
 //  Main Service Function

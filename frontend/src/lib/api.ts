@@ -264,8 +264,33 @@ export type MarketplacePoolItem = {
   createdAt: string;
 };
 
+export type PoolCredentials = {
+  username: string | null;
+  password: string | null;
+  inviteLink: string | null;
+  seatNo: number;
+  pin: string | null;
+};
+
 export const poolsApi = {
-  create: (data: any) =>
+  create: (data: {
+    serviceType: "CUSTOM" | "PRE_STORED";
+    customName?: string;
+    totalPlanCostINR?: number;
+    totalSeats?: number;
+    planMonths?: number;
+    visibility: "PUBLIC" | "PRIVATE";
+    hostUpiId: string;
+    platformConfigId?: string;
+    claimedPlanMonths?: number;
+    claimedMaxSeats?: number;
+    claimedTotalCostINR?: number;
+    credentials?: {
+      username?: string;
+      password?: string;
+      inviteLink?: string;
+    };
+  }) =>
     request<{ ok: boolean; data: any }>("/pools", { method: "POST", body: data }),
 
   getMarketplace: (params?: { search?: string; planMonths?: number; hasOpenSeats?: boolean }) => {
@@ -281,6 +306,36 @@ export const poolsApi = {
 
   getMyPools: () =>
     request<{ ok: boolean; data: Pool[] }>("/pools/my"),
+
+  join: (poolId: string, inviteToken?: string) =>
+    request<{
+      ok: boolean;
+      data: {
+        membershipId: string;
+        status: string;
+        paymentReceipt: {
+          transactionId: string;
+          amountCollected: number;
+          currency: string;
+          mandateId: string;
+          status: string;
+          collectedAt: string;
+        };
+        poolStatus: string;
+        openSeatsLeft: number;
+        credentials: PoolCredentials | null;
+      };
+      code?: string;
+      message?: string;
+    }>(`/pools/${poolId}/join`, {
+      method: "POST",
+      body: inviteToken ? { inviteToken } : {},
+    }),
+
+  getCredentials: (poolId: string) =>
+    request<{ ok: boolean; data: PoolCredentials; code?: string; message?: string }>(
+      `/pools/${poolId}/credentials`
+    ),
 };
 
 // ---------------------------------------------------------------------------

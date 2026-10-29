@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { type MarketplacePool } from "@/components/marketplace-view";
-import { EscrowCheckout } from "@/components/splitza/escrow-checkout";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
 import { HostPlanDetails, type Service } from "@/components/hosted-plans";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { Marketplace } from "@/components/splitza/marketplace";
+import { EscrowFlow } from "@/components/escrow/escrow-flow";
 import { useAuth } from "@/context/AuthContext";
 import type { Pool, DashboardRoutes, EscrowStep } from "@/lib/dashboard/types";
 import { Check, Copy, Lock, MessageCircle, Send } from "lucide-react";
@@ -147,16 +147,25 @@ export default function Dashboard() {
   }, []);
 
   const handleLaunch = async (details: LaunchPlanDetails) => {
+    // Validate UPI before sending to backend
+    const upi = details.hostUpiId?.trim() ?? ""
+    const upiValid = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)
+    if (!upiValid) {
+      alert(`Invalid UPI ID: "${upi || "(empty)"}"\n\nPlease enter a valid UPI ID like yourname@okaxis before creating the pool.`)
+      return
+    }
+
     setIsCreating(true);
     try {
       await poolsApi.create({
         serviceType: "CUSTOM",
         customName: details.name,
-        totalPlanCostINR: details.price * details.limit,
+        totalPlanCostINR: details.price * (details.limit + 1),
         totalSeats: details.limit + 1,
         planMonths: 1,
         visibility: details.isPrivate ? "PRIVATE" : "PUBLIC",
-        hostUpiId: "host@upi",
+        hostUpiId: upi,
+        credentials: details.credentials,
       });
 
       const newService: Service = {
@@ -175,9 +184,10 @@ export default function Dashboard() {
       setMyServices((prev) => [newService, ...prev]);
       setIsSharing(false);
       if (details.isPrivate) setActiveShareService(newService);
-    } catch (e) {
+    } catch (e: any) {
+      const msg = e?.message ?? "Failed to create plan on backend."
+      alert(`Could not create pool:\n\n${msg}`)
       console.error("Failed to create plan:", e);
-      alert("Failed to create plan on backend.");
     } finally {
       setIsCreating(false);
     }
@@ -195,15 +205,6 @@ export default function Dashboard() {
   // Full-screen overlay views
   if (isSharing) {
     return <SharePage dark={false} onBack={() => setIsSharing(false)} onLaunch={handleLaunch} />;
-  }
-
-  if (joiningPool) {
-    return (
-      <EscrowCheckout
-        pool={joiningPool}
-        onBack={() => { setJoiningPool(null); setIsBrowsing(true); }}
-      />
-    );
   }
 
   if (activeService) {
@@ -245,6 +246,11 @@ export default function Dashboard() {
             onJoin={(pool) => { setIsBrowsing(false); setJoiningPool(pool); }}
           />
         ) : undefined}
+      />
+
+      <EscrowFlow
+        pool={joiningPool}
+        onClose={() => { setJoiningPool(null); setIsBrowsing(true); }}
       />
 
       {/* Private pool live popup — kept as-is from original */}
