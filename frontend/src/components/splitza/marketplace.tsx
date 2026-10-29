@@ -1,28 +1,71 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Cloud, Clapperboard, Gamepad2, GraduationCap,
-  LayoutGrid, Music, Plus, Search, Shapes, X, type LucideIcon,
+  LayoutGrid, Loader2, Music, Plus, Search, Shapes, X, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CATEGORIES, POOLS, type Category, type Pool } from '@/lib/pools'
+import { CATEGORIES, POOLS as DEMO_POOLS, type Category, type Pool } from '@/lib/pools'
 import type { MarketplacePool } from '@/components/marketplace-view'
+import { poolsApi, type MarketplacePoolItem } from '@/lib/api'
 import { HeroBanner } from './hero-banner'
 import { PoolCard } from './pool-card'
 import { PoolDetailDialog } from './pool-detail-dialog'
 
 type Filter = 'All' | Category
 
+const TONES = ['sun', 'bubble', 'mint', 'lilac', 'peach', 'sky'] as const
+type Tone = (typeof TONES)[number]
+
 const FILTER_STYLES: Record<Filter, { icon: LucideIcon; bg: string }> = {
-  All: { icon: LayoutGrid, bg: 'bg-mint' },
-  Entertainment: { icon: Clapperboard, bg: 'bg-bubble' },
-  Music: { icon: Music, bg: 'bg-lilac' },
-  Cloud: { icon: Cloud, bg: 'bg-sky' },
-  Education: { icon: GraduationCap, bg: 'bg-sun' },
-  Games: { icon: Gamepad2, bg: 'bg-mint' },
-  Others: { icon: Shapes, bg: 'bg-peach' },
+  All:           { icon: LayoutGrid,    bg: 'bg-mint' },
+  Entertainment: { icon: Clapperboard,  bg: 'bg-bubble' },
+  Music:         { icon: Music,         bg: 'bg-lilac' },
+  Cloud:         { icon: Cloud,         bg: 'bg-sky' },
+  Education:     { icon: GraduationCap, bg: 'bg-sun' },
+  Games:         { icon: Gamepad2,      bg: 'bg-mint' },
+  Others:        { icon: Shapes,        bg: 'bg-peach' },
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Map a backend MarketplacePoolItem → the Pool shape used by PoolCard / PoolDetailDialog */
+function apiItemToPool(item: MarketplacePoolItem, index: number): Pool {
+  const tone = TONES[index % TONES.length]
+
+  // Try to guess a category from the platform name
+  const nameLower = item.platformName.toLowerCase()
+  let category: Category = 'Others'
+  if (['netflix', 'disney', 'hotstar', 'prime', 'youtube', 'zee', 'sony'].some(k => nameLower.includes(k))) category = 'Entertainment'
+  else if (['spotify', 'apple music', 'jiosaavn', 'gaana', 'wynk'].some(k => nameLower.includes(k))) category = 'Music'
+  else if (['google one', 'icloud', 'dropbox', 'onedrive', 'microsoft', 'box'].some(k => nameLower.includes(k))) category = 'Cloud'
+  else if (['duolingo', 'coursera', 'skillshare', 'udemy', 'linkedin learning'].some(k => nameLower.includes(k))) category = 'Education'
+  else if (['xbox', 'playstation', 'ps plus', 'ea play', 'nintendo', 'steam'].some(k => nameLower.includes(k))) category = 'Games'
+
+  return {
+    id:          item.id,
+    name:        item.platformName,
+    service:     item.platformName,
+    category,
+    host:        item.hostName,
+    hostHandle:  `@${item.hostName.toLowerCase().replace(/\s+/g, '.')}`,
+    logo:        item.platformLogoUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(item.platformName)}&background=random&size=64`,
+    totalCost:   item.pricePerSeat * item.maxSeats,
+    totalSeats:  item.maxSeats,
+    seatsLeft:   item.openSeats,
+    daysLeft:    item.planMonths * 30,
+    cycleDays:   item.planMonths * 30,
+    tone,
+    perks:       [],
+    description: `A ${item.planMonths}-month shared plan hosted by ${item.hostName}. ${item.openSeats} seat${item.openSeats !== 1 ? 's' : ''} available.`,
+    rules:       ['Pay on time each billing cycle.', 'Do not share your credentials outside the pool.'],
+    hostRating:  item.hostTrustScore ?? 4.5,
+    hostPools:   1,
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface MarketplaceProps {
   onCreatePlan?: () => void
@@ -30,9 +73,45 @@ interface MarketplaceProps {
 }
 
 export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<Filter>('All')
+  const [query,    setQuery]    = useState('')
+  const [filter,   setFilter]   = useState<Filter>('All')
   const [selected, setSelected] = useState<Pool | null>(null)
+
+  // Live API data
+  const [livePools,  setLivePools]  = useState<Pool[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [apiError,   setApiError]   = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setApiError(null)
+
+    poolsApi.getMarketplace({ hasOpenSeats: false })
+      .then((res) => {
+        if (cancelled) return
+        if (res.ok && Array.isArray(res.data)) {
+          setLivePools(res.data.map((item, i) => apiItemToPool(item, i)))
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return
+        // Non-fatal — fall back to demo data silently but show a soft warning
+        setApiError(err?.message ?? 'Could not load live pools')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [])
+
+  // Merge: live pools first, then demo pools (de-duplicated by name)
+  const allPools: Pool[] = useMemo(() => {
+    const liveNames = new Set(livePools.map(p => p.name.toLowerCase()))
+    const dedupedDemo = DEMO_POOLS.filter(p => !liveNames.has(p.name.toLowerCase()))
+    return [...livePools, ...dedupedDemo]
+  }, [livePools])
 
   const matchesQuery = (pool: Pool) => {
     const term = query.trim().toLowerCase()
@@ -46,12 +125,12 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
   }
 
   const countFor = (category: Filter) =>
-    POOLS.filter((pool) => matchesQuery(pool) && (category === 'All' || pool.category === category)).length
+    allPools.filter((pool) => matchesQuery(pool) && (category === 'All' || pool.category === category)).length
 
   const visiblePools = useMemo(
-    () => POOLS.filter((pool) => matchesQuery(pool) && (filter === 'All' || pool.category === filter)),
+    () => allPools.filter((pool) => matchesQuery(pool) && (filter === 'All' || pool.category === filter)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query, filter],
+    [query, filter, allPools],
   )
 
   const filters: Filter[] = ['All', ...CATEGORIES]
@@ -59,6 +138,19 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
   return (
     <div className="flex flex-col gap-8">
       <HeroBanner />
+
+      {/* Live indicator */}
+      {!loading && livePools.length > 0 && (
+        <div className="flex items-center gap-2 rounded-full border-2 border-ink/20 bg-white px-4 py-2 text-xs font-bold w-fit">
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+          {livePools.length} live pool{livePools.length !== 1 ? 's' : ''} from community hosts
+        </div>
+      )}
+      {apiError && (
+        <p className="text-xs text-amber-600 font-medium">
+          ⚠ Could not reach server — showing demo pools only.
+        </p>
+      )}
 
       {/* Search + filters */}
       <section id="browse-pools" aria-label="Search and filter pools" className="flex scroll-mt-6 flex-col gap-5">
@@ -113,29 +205,38 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
 
       {/* Pool grid */}
       <section aria-label="Available pools" className="flex flex-col gap-4">
-        <p className="text-sm font-semibold text-ink/70" aria-live="polite">
-          Showing {visiblePools.length} {visiblePools.length === 1 ? 'pool' : 'pools'}
-          {filter !== 'All' && ` in ${filter}`}
-        </p>
-
-        {visiblePools.length > 0 ? (
-          <ul className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-            {visiblePools.map((pool) => (
-              <li key={pool.id} className="flex">
-                <PoolCard pool={pool} seatsLeft={pool.seatsLeft} joined={false} onOpen={setSelected} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="brut flex flex-col items-center gap-4 rounded-[2rem] bg-white p-8 text-center">
-            <div className="brut-sm flex size-20 items-center justify-center rounded-3xl bg-sun text-4xl">🔍</div>
-            <h3 className="text-2xl font-extrabold tracking-tight">No pools match that</h3>
-            <p className="max-w-sm text-ink/70">Try another name, host, or category. Or start your own pool and let people come to you.</p>
-            <button type="button" onClick={() => { setQuery(''); setFilter('All') }}
-              className="brut-sm brut-press rounded-full bg-bubble px-5 py-2.5 font-bold">
-              Reset filters
-            </button>
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 py-16 text-ink/60 font-medium">
+            <Loader2 className="size-5 animate-spin" />
+            Loading live pools…
           </div>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-ink/70" aria-live="polite">
+              Showing {visiblePools.length} {visiblePools.length === 1 ? 'pool' : 'pools'}
+              {filter !== 'All' && ` in ${filter}`}
+            </p>
+
+            {visiblePools.length > 0 ? (
+              <ul className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                {visiblePools.map((pool) => (
+                  <li key={pool.id} className="flex">
+                    <PoolCard pool={pool} seatsLeft={pool.seatsLeft} joined={false} onOpen={setSelected} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="brut flex flex-col items-center gap-4 rounded-[2rem] bg-white p-8 text-center">
+                <div className="brut-sm flex size-20 items-center justify-center rounded-3xl bg-sun text-4xl">🔍</div>
+                <h3 className="text-2xl font-extrabold tracking-tight">No pools match that</h3>
+                <p className="max-w-sm text-ink/70">Try another name, host, or category. Or start your own pool and let people come to you.</p>
+                <button type="button" onClick={() => { setQuery(''); setFilter('All') }}
+                  className="brut-sm brut-press rounded-full bg-bubble px-5 py-2.5 font-bold">
+                  Reset filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

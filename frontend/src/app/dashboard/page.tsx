@@ -147,12 +147,11 @@ export default function Dashboard() {
   }, []);
 
   const handleLaunch = async (details: LaunchPlanDetails) => {
-    // Validate UPI before sending to backend
+    // UPI is pre-validated in share-page before this is called,
+    // but double-check here as a safety net.
     const upi = details.hostUpiId?.trim() ?? ""
-    const upiValid = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)
-    if (!upiValid) {
-      alert(`Invalid UPI ID: "${upi || "(empty)"}"\n\nPlease enter a valid UPI ID like yourname@okaxis before creating the pool.`)
-      return
+    if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) {
+      throw new Error(`Invalid UPI ID "${upi || "(empty)"}". Use a format like yourname@okaxis.`)
     }
 
     setIsCreating(true);
@@ -185,9 +184,8 @@ export default function Dashboard() {
       setIsSharing(false);
       if (details.isPrivate) setActiveShareService(newService);
     } catch (e: any) {
-      const msg = e?.message ?? "Failed to create plan on backend."
-      alert(`Could not create pool:\n\n${msg}`)
-      console.error("Failed to create plan:", e);
+      // Re-throw so share-page's launchError state can display it inline
+      throw new Error(e?.message ?? "Failed to create pool. Please try again.");
     } finally {
       setIsCreating(false);
     }

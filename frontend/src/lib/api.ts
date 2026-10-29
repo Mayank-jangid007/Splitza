@@ -300,7 +300,8 @@ export const poolsApi = {
     if (params?.hasOpenSeats) qs.set("hasOpenSeats", "true");
     const query = qs.toString();
     return request<{ ok: boolean; data: MarketplacePoolItem[]; meta: any }>(
-      `/marketplace${query ? `?${query}` : ""}`
+      `/marketplace${query ? `?${query}` : ""}`,
+      { authenticated: false }   // public endpoint — no JWT needed
     );
   },
 

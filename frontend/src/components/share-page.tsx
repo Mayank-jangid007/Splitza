@@ -42,7 +42,7 @@ export type LaunchPlanDetails = {
   };
 };
 
-export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: () => void; onLaunch?: (details: LaunchPlanDetails) => void }) {
+export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: () => void; onLaunch?: (details: LaunchPlanDetails) => Promise<void> | void }) {
   const [step, setStep] = useState(1)
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<typeof catalog[number] | null>(null)
@@ -57,6 +57,8 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
   const [password, setPassword] = useState("")
   const [inviteLink, setInviteLink] = useState("")
   const [upi, setUpi] = useState("")
+  const [launchError, setLaunchError] = useState("")
+  const [isLaunching, setIsLaunching] = useState(false)
 
   const results = catalog.filter(item => item.name.toLowerCase().includes(query.toLowerCase()))
   const suggestions = query ? results : catalog.slice(0, 3)
@@ -101,9 +103,13 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
       ? "mx-auto w-full max-w-3xl text-center"
       : "relative z-10 ml-auto w-full max-w-2xl rounded-2xl border-[3px] border-black bg-slate-950 p-6 text-slate-100 shadow-[8px_8px_0_#34d399] lg:mr-6 lg:p-8"
 
+  const UPI_RE = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/
   const hasCredentials = (username.trim() && password.trim()) || inviteLink.trim()
+  const upiInvalid = upi.trim() !== "" && !UPI_RE.test(upi.trim())
   const nextDisabled =
-    (step === 4 && !hasCredentials) || (step === 5 && !upi.includes("@"))
+    (step === 4 && !hasCredentials) ||
+    (step === 5 && !UPI_RE.test(upi.trim())) ||
+    isLaunching
 
   return (
     <main className={`min-h-screen px-4 pb-12 font-sans ${dark ? "bg-[#020617] text-slate-50" : "bg-slate-100 text-slate-950"}`}>
@@ -273,18 +279,24 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                       <span className="flex items-center gap-2 font-mono text-[10px] font-black tracking-[.14em] text-slate-400"><Wallet size={13} /> UPI ID</span>
                       <input
                         value={upi}
-                        onChange={event => setUpi(event.target.value)}
+                        onChange={event => { setUpi(event.target.value); setLaunchError("") }}
                         placeholder="yourname@okaxis"
+                        autoComplete="off"
                         className={`rounded-xl border-[3px] bg-slate-900 px-4 py-4 font-mono text-sm outline-none transition text-white ${
-                          upi && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi.trim())
+                          upiInvalid
                             ? 'border-red-500 focus:border-red-400'
-                            : 'border-slate-700 focus:border-emerald-300'
+                            : upi.trim() && UPI_RE.test(upi.trim())
+                              ? 'border-emerald-400 focus:border-emerald-300'
+                              : 'border-slate-700 focus:border-emerald-300'
                         }`}
                       />
-                      {upi && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi.trim()) && (
-                        <span className="font-mono text-[11px] font-bold text-red-400">
-                          Invalid UPI ID — use format like yourname@okaxis or yourname@ybl
+                      {upiInvalid && (
+                        <span role="alert" className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-red-400">
+                          ⚠ Invalid UPI ID — expected format: <code className="bg-slate-800 px-1 rounded">yourname@okaxis</code> or <code className="bg-slate-800 px-1 rounded">yourname@ybl</code>
                         </span>
+                      )}
+                      {upi.trim() && UPI_RE.test(upi.trim()) && (
+                        <span className="font-mono text-[11px] font-bold text-emerald-400">✓ Valid UPI ID</span>
                       )}
                     </label>
                     <p className="font-mono text-[10px] text-slate-500">You&apos;ll receive ₹{Math.max(0, Math.round(price / Math.max(1, limit)))} per member each cycle.</p>
@@ -327,37 +339,60 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
             </AnimatePresence>
 
             <div className="mt-10 flex justify-between border-t-2 border-slate-700 pt-5">
-              <button onClick={() => (step === 1 ? onBack() : setStep(step - 1))} className="rounded-lg border-2 border-slate-700 px-4 py-3 font-mono text-[10px] font-black hover:bg-slate-800 transition-colors">
+              <button
+                onClick={() => (step === 1 ? onBack() : setStep(step - 1))}
+                disabled={isLaunching}
+                className="rounded-lg border-2 border-slate-700 px-4 py-3 font-mono text-[10px] font-black hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
                 {step === 1 ? "CANCEL" : "BACK"}
               </button>
               <button
                 disabled={nextDisabled}
-                onClick={() => {
+                onClick={async () => {
                   if (step < 6) {
+                    setLaunchError("")
                     setStep(step + 1)
                   } else {
-                    onLaunch?.({
-                      name: name || "Custom split",
-                      price: Math.max(0, Math.round(price / Math.max(1, limit))),
-                      limit: Number(limit) || 1,
-                      isPrivate: visibility === "private",
-                      tier: custom ? undefined : selected?.tier,
-                      logoUrl: custom ? undefined : selected?.logoUrl,
-                      hostUpiId: upi.trim() || undefined,
-                      credentials: {
-                        username: username.trim() || undefined,
-                        password: password.trim() || undefined,
-                        inviteLink: inviteLink.trim() || undefined,
-                      },
-                    })
+                    // Final UPI guard (catches edge-cases bypassing disabled state)
+                    if (!UPI_RE.test(upi.trim())) {
+                      setLaunchError("Please enter a valid UPI ID (e.g. yourname@okaxis) before launching.")
+                      return
+                    }
+                    setLaunchError("")
+                    setIsLaunching(true)
+                    try {
+                      await onLaunch?.({
+                        name: name || "Custom split",
+                        price: Math.max(0, Math.round(price / Math.max(1, limit))),
+                        limit: Number(limit) || 1,
+                        isPrivate: visibility === "private",
+                        tier: custom ? undefined : selected?.tier,
+                        logoUrl: custom ? undefined : selected?.logoUrl,
+                        hostUpiId: upi.trim() || undefined,
+                        credentials: {
+                          username: username.trim() || undefined,
+                          password: password.trim() || undefined,
+                          inviteLink: inviteLink.trim() || undefined,
+                        },
+                      })
+                    } catch (e: any) {
+                      setLaunchError(e?.message ?? "Something went wrong. Please try again.")
+                    } finally {
+                      setIsLaunching(false)
+                    }
                   }
                 }}
                 className="inline-flex items-center gap-2 rounded-lg border-[3px] border-black bg-emerald-300 px-5 py-3 font-mono text-[10px] font-black text-slate-950 shadow-[4px_4px_0_#000] transition hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-40"
               >
-                {step === 6 ? "LAUNCH ACTIVE SPLIT POOL 🎉" : "NEXT STEP"}
-                <ArrowUpRight size={14} />
+                {isLaunching ? "LAUNCHING…" : step === 6 ? "LAUNCH ACTIVE SPLIT POOL 🎉" : "NEXT STEP"}
+                {!isLaunching && <ArrowUpRight size={14} />}
               </button>
             </div>
+            {launchError && (
+              <p role="alert" className="mt-3 rounded-xl border-2 border-red-500 bg-red-500/10 px-4 py-3 font-mono text-[11px] font-bold text-red-400">
+                ⚠ {launchError}
+              </p>
+            )}
           </section>
         </div>
       </div>
@@ -384,6 +419,10 @@ type CustomProps = {
 function CustomParameters({ dark, name, price, limit, billing, monthlyMonths, onMonthlyMonths, onName, onPrice, onLimit, onBilling, onBack, onNext }: CustomProps) {
   const shell = dark ? "bg-[#07111f] text-slate-50" : "bg-slate-100 text-slate-950"
   const field = dark ? "border-slate-700 bg-slate-900 text-white" : "border-slate-300 bg-white"
+  const nameInvalid = name !== "" && !name.trim()
+  const priceNum = Number(price)
+  const priceInvalid = price !== "" && priceNum < 1
+  const priceTooLow = price !== "" && priceNum >= 1 && priceNum < 10
   return <section className={`min-h-screen px-4 py-8 font-sans ${shell}`}>
     <div className="mx-auto max-w-5xl">
       <button onClick={onBack} className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-700 px-4 py-2 font-mono text-[10px] font-black transition hover:-translate-x-1"><ArrowLeft size={15} /> BACK TO SUBSCRIPTIONS</button>
@@ -391,11 +430,12 @@ function CustomParameters({ dark, name, price, limit, billing, monthlyMonths, on
         <div><p className="font-mono text-[10px] font-black tracking-[.2em] text-emerald-300">HOST ONBOARDING / 0048</p><h1 className="mt-4 max-w-md font-mono text-5xl font-black uppercase leading-[.86] tracking-[-.1em]">Share your<br /><span className="text-violet-300">subscription.</span></h1><p className="mt-5 max-w-sm text-sm leading-6 text-slate-400">Set the details once. We&apos;ll use them to calculate your member split and payout.</p><div className="mt-10 flex max-w-xs flex-col gap-2">{["SELECT SUBSCRIPTION", "TIER & COST", "VISIBILITY", "CREDENTIALS", "PAYOUT", "REVIEW SUMMARY"].map((label, index) => <div key={label} className={`flex items-center gap-3 rounded-lg border-2 px-3 py-2.5 font-mono text-[10px] font-black ${index === 1 ? "border-emerald-300 bg-slate-900 text-emerald-300 shadow-[3px_3px_0_#34d399]" : index < 1 ? "border-emerald-300/50 bg-slate-950 text-emerald-300" : "border-slate-700 bg-slate-900 text-slate-500"}`}><span className={`grid size-6 place-items-center rounded-full border-2 border-current text-[9px] ${index < 1 ? "border-none bg-emerald-300 text-slate-950" : ""}`}>{index < 1 ? "✓" : String(index + 1).padStart(2, "0")}</span><span>{label}</span></div>)}</div><p className="mt-4 font-mono text-[10px] font-black text-slate-500">STEP 2 OF 6</p></div>
         <div className="rounded-3xl border-[3px] border-black bg-slate-950 p-5 shadow-[9px_9px_0_#34d399] sm:p-8">
           <div className="flex items-center justify-between"><div><p className="font-mono text-[10px] font-black tracking-[.16em] text-violet-300">TIER &amp; COST</p><h2 className="mt-2 font-mono text-2xl font-black">Custom split parameters</h2></div><Sparkles className="text-amber-300" size={24} /></div>
-          <label className="mt-8 block font-mono text-[10px] font-black text-violet-200">01 / SUBSCRIPTION NAME<input value={name} onChange={e => onName(e.target.value)} placeholder="e.g. Figma Professional" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-base font-black outline-none transition focus:border-violet-300 ${field}`} /></label>
-          <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"><label className="block font-mono text-[10px] font-black text-emerald-200"><span className="block tracking-[.14em]">02 / PRICE</span><input type="number" min="1" value={price} onChange={e => onPrice(e.target.value)} placeholder="649" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-2xl font-black outline-none transition focus:border-emerald-300 ${field}`} /></label><div className="grid gap-3"><div className="flex rounded-xl border-2 border-slate-700 bg-slate-900 p-1"><button type="button" onClick={() => onBilling("Monthly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Monthly" ? "bg-emerald-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-emerald-300"}`}>MONTHLY</button><button type="button" onClick={() => onBilling("Yearly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Yearly" ? "bg-violet-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-violet-300"}`}>YEARLY</button></div>{billing === "Monthly" && <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-emerald-300/40 bg-slate-900 px-3 py-2.5 font-mono"><span className="grid gap-0.5"><span className="text-[9px] font-black tracking-[.14em] text-emerald-200">BILLING TERM</span><span className="text-[10px] font-bold text-slate-400">How many months?</span></span><span className="flex items-center gap-2"><input aria-label="Number of months" type="number" min="1" max="12" value={monthlyMonths} onChange={e => onMonthlyMonths(e.target.value)} className={`w-16 rounded-lg border-2 px-2 py-2 text-center font-mono text-sm font-black outline-none focus:border-emerald-300 ${field}`} /></span></label>}</div></div>
+          <label className="mt-8 block font-mono text-[10px] font-black text-violet-200">01 / SUBSCRIPTION NAME<input value={name} onChange={e => onName(e.target.value)} placeholder="e.g. Figma Professional" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-base font-black outline-none transition focus:border-violet-300 ${nameInvalid ? "border-red-500 focus:border-red-400" : field}`} /></label>
+          {nameInvalid && <span role="alert" className="mt-1 block font-mono text-[11px] font-bold text-red-400">⚠ Subscription name cannot be empty.</span>}
+          <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"><div className="grid gap-1"><label className="block font-mono text-[10px] font-black text-emerald-200"><span className="block tracking-[.14em]">02 / PRICE (₹/month)</span><input type="number" min="1" value={price} onChange={e => onPrice(e.target.value)} placeholder="649" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-2xl font-black outline-none transition ${priceInvalid ? "border-red-500 focus:border-red-400" : priceTooLow ? "border-amber-400 focus:border-amber-300" : `focus:border-emerald-300 ${field}`}`} /></label>{priceInvalid && <span role="alert" className="font-mono text-[11px] font-bold text-red-400">⚠ Price must be at least ₹1.</span>}{priceTooLow && <span role="alert" className="font-mono text-[11px] font-bold text-amber-400">⚠ Minimum price per slot is ₹10 — the backend will reject lower values.</span>}</div><div className="grid gap-3"><div className="flex rounded-xl border-2 border-slate-700 bg-slate-900 p-1"><button type="button" onClick={() => onBilling("Monthly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Monthly" ? "bg-emerald-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-emerald-300"}`}>MONTHLY</button><button type="button" onClick={() => onBilling("Yearly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Yearly" ? "bg-violet-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-violet-300"}`}>YEARLY</button></div>{billing === "Monthly" && <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-emerald-300/40 bg-slate-900 px-3 py-2.5 font-mono"><span className="grid gap-0.5"><span className="text-[9px] font-black tracking-[.14em] text-emerald-200">BILLING TERM</span><span className="text-[10px] font-bold text-slate-400">How many months?</span></span><span className="flex items-center gap-2"><input aria-label="Number of months" type="number" min="1" max="12" value={monthlyMonths} onChange={e => onMonthlyMonths(e.target.value)} className={`w-16 rounded-lg border-2 px-2 py-2 text-center font-mono text-sm font-black outline-none focus:border-emerald-300 ${field}`} /></span></label>}</div></div>
           <div className="mt-6 rounded-2xl border-[3px] border-amber-300/80 bg-slate-900 p-4 shadow-[4px_4px_0_#fbbf24]"><div className="flex items-center justify-between"><label className="font-mono text-[10px] font-black text-amber-200">03 / MEMBER LIMIT</label><span className="font-mono text-[9px] text-slate-400">EXCLUDING YOU</span></div><div className="mt-3 flex items-center justify-between gap-4"><button type="button" onClick={() => onLimit(String(Math.max(1, Number(limit || 1) - 1)))} className="grid size-12 place-items-center rounded-xl border-2 border-amber-300 bg-slate-950 text-amber-300 transition hover:bg-amber-300 hover:text-slate-950"><Minus size={18} /></button><span className="font-mono text-5xl font-black text-amber-300">{limit || 1}</span><button type="button" onClick={() => onLimit(String(Math.min(12, Number(limit || 1) + 1)))} className="grid size-12 place-items-center rounded-xl border-2 border-amber-300 bg-slate-950 text-amber-300 transition hover:bg-amber-300 hover:text-slate-950"><Plus size={18} /></button></div></div>
           <div className="mt-6 flex items-center justify-between border-t-2 border-slate-800 pt-5"><span className="font-mono text-[10px] text-slate-400">EST. PAYOUT / MEMBER</span><strong className="font-mono text-xl text-emerald-300">₹{Math.round((Number(price) || 0) / Math.max(1, Number(limit) || 1))}</strong></div>
-          <div className="mt-6 flex justify-end"><button disabled={!name.trim() || !price} onClick={onNext} className="inline-flex items-center gap-2 rounded-xl border-[3px] border-black bg-emerald-300 px-5 py-3 font-mono text-[10px] font-black text-slate-950 shadow-[4px_4px_0_#fbbf24] transition hover:translate-x-0.5 hover:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40">CONTINUE TO SEATS <ArrowRight size={15} /></button></div>
+          <div className="mt-6 flex justify-end"><button disabled={!name.trim() || !price || Number(price) < 1} onClick={onNext} className="inline-flex items-center gap-2 rounded-xl border-[3px] border-black bg-emerald-300 px-5 py-3 font-mono text-[10px] font-black text-slate-950 shadow-[4px_4px_0_#fbbf24] transition hover:translate-x-0.5 hover:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40">CONTINUE TO SEATS <ArrowRight size={15} /></button></div>
         </div>
       </div>
     </div>
