@@ -217,7 +217,7 @@ function useCopy() {
   const t = useRef<Timer | undefined>(undefined);
   useEffect(() => () => clearTimeout(t.current), []);
   const copy = (key: string, text: string) => {
-    navigator.clipboard?.writeText(text).catch(() => {});
+    navigator.clipboard?.writeText(text).catch(() => { });
     setCopied(key);
     clearTimeout(t.current);
     t.current = setTimeout(() => setCopied(""), 1800);
@@ -472,11 +472,12 @@ function Row({
   );
 }
 
-function Credentials({ pool, onDash }: { pool: EscrowPool; onDash: () => void }) {
+function Credentials({ pool, error, onDash }: { pool: EscrowPool; error?: string | null; onDash: () => void }) {
   const { copied, copy } = useCopy();
   const [show, setShow] = useState(false);
   const [opened, setOpened] = useState(false);
   const letter = pool.name.charAt(0).toUpperCase();
+  const hasRealCreds = !!(pool.username || pool.password || pool.inviteLink);
   return (
     <section
       aria-label="Your access credentials"
@@ -489,27 +490,56 @@ function Credentials({ pool, onDash }: { pool: EscrowPool; onDash: () => void })
         badgeBg="bg-white"
         letter={letter}
       />
-      <div className="flex flex-col rounded-[20px] border-2 border-[#151515] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_#151515]">
-        <Row label="Username" value={pool.username}>
-          <CopyBtn done={copied === "user"} onClick={() => copy("user", pool.username)} />
-        </Row>
-        <Row label="Password" value={show ? pool.password : "•".repeat(12)}>
-          <button
-            type="button"
-            onClick={() => setShow(!show)}
-            aria-label={show ? "Hide password" : "Show password"}
-            className={`${BTN} w-11 bg-white shadow-[2px_2px_0_0_#151515]`}
-          >
-            <Icon name={show ? "eyeOff" : "eye"} size={18} />
-          </button>
-          <CopyBtn done={copied === "pass"} onClick={() => copy("pass", pool.password)} />
-        </Row>
-        <Row label="Profile" value={`Seat ${pool.seatNo} · PIN ${pool.pin}`} last>
-          <CopyBtn done={copied === "pin"} onClick={() => copy("pin", pool.pin)} />
-        </Row>
-      </div>
+
+      {(!hasRealCreds || error) && (
+        <div className="flex items-start gap-3 rounded-2xl border-2 border-[#151515] bg-white p-4 text-sm font-semibold leading-snug">
+          <Icon name="flag" size={18} className="mt-px shrink-0" />
+          <span>
+            {error
+              ? error
+              : "The host hasn't uploaded credentials yet — they'll appear here automatically. Check back in a few minutes."}
+          </span>
+        </div>
+      )}
+
+      {hasRealCreds && (
+        <div className="flex flex-col rounded-[20px] border-2 border-[#151515] bg-white px-4 py-1.5 shadow-[3px_3px_0_0_#151515]">
+          {pool.username && (
+            <Row label="Username" value={pool.username}>
+              <CopyBtn done={copied === "user"} onClick={() => copy("user", pool.username)} />
+            </Row>
+          )}
+          {pool.password && (
+            <Row label="Password" value={show ? pool.password : "•".repeat(12)}>
+              <button
+                type="button"
+                onClick={() => setShow(!show)}
+                aria-label={show ? "Hide password" : "Show password"}
+                className={`${BTN} w-11 bg-white shadow-[2px_2px_0_0_#151515]`}
+              >
+                <Icon name={show ? "eyeOff" : "eye"} size={18} />
+              </button>
+              <CopyBtn done={copied === "pass"} onClick={() => copy("pass", pool.password)} />
+            </Row>
+          )}
+          {pool.inviteLink ? (
+            <Row label="Invite link" value={pool.inviteLink} last>
+              <CopyBtn done={copied === "link"} onClick={() => copy("link", pool.inviteLink!)} />
+            </Row>
+          ) : (
+            <Row label="Profile" value={`Seat ${pool.seatNo} · PIN ${pool.pin !== "—" ? pool.pin : "(none)"}`} last>
+              {pool.pin !== "—" && (
+                <CopyBtn done={copied === "pin"} onClick={() => copy("pin", pool.pin)} />
+              )}
+            </Row>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3">
-        <OpenButton onClick={() => setOpened(true)} className="flex-[2_1_260px]" />
+        {hasRealCreds && (
+          <OpenButton onClick={() => setOpened(true)} className="flex-[2_1_260px]" />
+        )}
         <button type="button" onClick={onDash} className={`${BTN_LIGHT} flex-[1_1_180px]`}>
           Go to dashboard <Icon name="next" size={18} sw={2.6} />
         </button>
@@ -611,9 +641,9 @@ function Summary({ pool, paid }: { pool: EscrowPool; paid: boolean }) {
     ["Your split", pool.split],
     ...(paid
       ? ([
-          ["Paid via", "Razorpay UPI"],
-          ["Reference", pool.reference],
-        ] as [string, string][])
+        ["Paid via", "Razorpay UPI"],
+        ["Reference", pool.reference],
+      ] as [string, string][])
       : []),
   ];
   return (
@@ -659,12 +689,15 @@ function Summary({ pool, paid }: { pool: EscrowPool; paid: boolean }) {
 interface EscrowFlowProps {
   pool: MarketplacePool | null;
   onClose: () => void;
+  onJoinComplete?: () => void;
 }
 
-export function EscrowFlow({ pool, onClose }: EscrowFlowProps) {
+export function EscrowFlow({ pool, onClose, onJoinComplete }: EscrowFlowProps) {
   const [stage, setStage] = useState<Stage>("pay");
   const [upi, setUpi] = useState("");
   const [touched, setTouched] = useState(false);
+  const [creds, setCreds] = useState<import('@/lib/api').PoolCredentials | null>(null);
+  const [credsError, setCredsError] = useState<string | null>(null);
   const timers = useRef<Timer[]>([]);
 
   const clearTimers = () => {
@@ -678,6 +711,8 @@ export function EscrowFlow({ pool, onClose }: EscrowFlowProps) {
       setStage("pay");
       setUpi("");
       setTouched(false);
+      setCreds(null);
+      setCredsError(null);
       return;
     }
     const handler = (e: KeyboardEvent) => {
@@ -694,7 +729,7 @@ export function EscrowFlow({ pool, onClose }: EscrowFlowProps) {
 
   if (!pool) return null;
 
-  const escrowPool = toEscrowPool(pool);
+  const escrowPool = toEscrowPool(pool, creds);
   const invalid = touched && !UPI_RE.test(upi.trim());
   const paid = stage === "done" || stage === "dashboard";
 
@@ -708,14 +743,41 @@ export function EscrowFlow({ pool, onClose }: EscrowFlowProps) {
     setStage("paying");
     timers.current = [
       setTimeout(() => setStage("confirming"), 1800),
-      setTimeout(() => setStage("done"), 3000),
+      setTimeout(async () => {
+        if (pool?.id) {
+          try {
+            const res = await poolsApi.join(pool.id);
+            if (res.ok && res.data?.credentials) {
+              setCreds(res.data.credentials);
+            } else {
+              try {
+                const credsRes = await poolsApi.getCredentials(pool.id);
+                if (credsRes.ok && credsRes.data) setCreds(credsRes.data);
+              } catch {
+                setCredsError("Credentials will be shared by the host shortly.");
+              }
+            }
+          } catch (err: any) {
+            setCredsError(
+              err?.message?.includes("POOL_NOT_FOUND") || err?.message?.includes("HOST_CANNOT_JOIN")
+                ? "Demo pool — credentials will appear once you join a real pool."
+                : err?.message ?? "Could not fetch credentials. Please contact the host."
+            );
+          }
+        }
+        setStage("done");
+        onJoinComplete?.();
+      }, 3000),
     ];
   }
 
   function replay() {
     clearTimers();
     setStage("pay");
+    setUpi("");
     setTouched(false);
+    setCreds(null);
+    setCredsError(null);
   }
 
   const eyebrow =
@@ -801,7 +863,7 @@ export function EscrowFlow({ pool, onClose }: EscrowFlowProps) {
               {stage === "done" && (
                 <>
                   <Progress paid />
-                  <Credentials pool={escrowPool} onDash={() => setStage("dashboard")} />
+                  <Credentials pool={escrowPool} error={credsError} onDash={() => setStage("dashboard")} />
                 </>
               )}
               {stage === "dashboard" && (

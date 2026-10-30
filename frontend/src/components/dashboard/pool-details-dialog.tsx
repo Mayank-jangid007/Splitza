@@ -22,9 +22,11 @@ import {
 } from '@/lib/dashboard/neo'
 import { cn } from '@/lib/utils'
 import { EscrowStepper } from './escrow-stepper'
+import { WeeklyPayoutProgress, buildWeeks } from './weekly-payout-progress'
 import { PoolLogo } from './pool-logo'
 import { SeatMeter } from './seat-meter'
 import { MonoLabel, Tag } from './tag'
+import { CoHostCard } from './co-host-card'
 
 interface PoolDetailsDialogProps {
   pool: Pool | null
@@ -82,9 +84,29 @@ export function PoolDetailsDialog({ pool, routes, onClose }: PoolDetailsDialogPr
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border-2 border-foreground bg-background shadow-brutal-xl outline-none"
+            className={cn(
+              'fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto outline-none',
+              pool.role === 'member'
+                ? 'rounded-[36px]'
+                : 'rounded-3xl border-2 border-foreground bg-background shadow-brutal-xl'
+            )}
           >
-            <DetailsBody ref={closeRef} pool={pool} routes={routes} onClose={onClose} />
+            {pool.role === 'member' ? (
+              <div className="relative">
+                <button
+                  ref={closeRef}
+                  type="button"
+                  aria-label="Close"
+                  onClick={onClose}
+                  className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full border-2 border-[#151515] bg-white shadow-[2px_2px_0_0_#151515] hover:bg-[#fbf6ee]"
+                >
+                  <X className="size-4" />
+                </button>
+                <CoHostCard pool={pool} />
+              </div>
+            ) : (
+              <DetailsBody ref={closeRef} pool={pool} routes={routes} onClose={onClose} />
+            )}
           </motion.div>
         </>
       )}
@@ -142,8 +164,24 @@ const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: Dashboar
 
         <div className="space-y-6 p-5">
           <section>
-            <MonoLabel className="mb-3">Escrow status</MonoLabel>
-            <EscrowStepper current={pool.escrowStep} />
+            {pool.role === 'host' ? (
+              <>
+                <MonoLabel className="mb-3">Weekly payout</MonoLabel>
+                <WeeklyPayoutProgress
+                  weeks={buildWeeks(
+                    pool.planMonths,
+                    pool.pricePerSeat,
+                    pool.filledSeats,
+                    getDaysElapsed(pool),
+                  )}
+                />
+              </>
+            ) : (
+              <>
+                <MonoLabel className="mb-3">Escrow status</MonoLabel>
+                <EscrowStepper current={pool.escrowStep} />
+              </>
+            )}
           </section>
 
           <section>

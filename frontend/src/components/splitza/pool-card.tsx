@@ -52,7 +52,7 @@ export function PoolCard({ pool, seatsLeft, joined, onOpen }: PoolCardProps) {
           <span className="text-xs font-bold tracking-wide text-ink/60 uppercase">Your share</span>
           <p className="font-mono text-2xl leading-none font-bold">
             {formatINR(splitPrice(pool))}
-            <span className="font-sans text-sm font-semibold text-ink/60"> /mo</span>
+            <span className="font-sans text-sm font-semibold text-ink/60">{pool.cycleDays >= 360 ? " /yr" : " /mo"}</span>
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

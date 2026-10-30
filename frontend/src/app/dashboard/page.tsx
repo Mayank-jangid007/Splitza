@@ -115,80 +115,84 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    const fetchPools = async () => {
-      try {
-        const myRes = await poolsApi.getMyPools();
-        if (myRes.ok) {
-          const mapPool = (p: ApiPool): Service => {
-            const poolName = p.name || p.platformName || "Platform Plan";
-            const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
-            return {
-              name: poolName,
-              host: p.role === "HOST" ? "You" : (p.host || p.hostName || "Host"),
-              price: p.pricePerSeat,
-              capacity: p.maxSeats,
-              filled: p.filledSeats || 0,
-              private: p.visibility === "PRIVATE",
-              brand: poolName.substring(0, 2).toUpperCase(),
-              logoUrl: logoKey ? LOGO_MAP[logoKey] : undefined,
-              accent: p.visibility === "PRIVATE" ? "bg-violet-400" : "bg-emerald-400",
-              planMonths: p.planMonths,
-              startDate: p.startDate,
-            };
+  const fetchPools = async () => {
+    try {
+      const myRes = await poolsApi.getMyPools();
+      if (myRes.ok) {
+        const mapPool = (p: ApiPool): Service => {
+          const poolName = p.name || p.platformName || "Platform Plan";
+          const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
+          return {
+            name: poolName,
+            // p.role is "HOST" | "MEMBER" from backend
+            // backend already sets host = "You" for HOST, actual name for MEMBER
+            host: p.role === "HOST" ? "You" : (p.host || p.hostName || "Unknown host"),
+            price: p.pricePerSeat,
+            capacity: p.maxSeats,
+            filled: p.filledSeats || 0,
+            private: p.visibility === "PRIVATE",
+            brand: poolName.substring(0, 2).toUpperCase(),
+            logoUrl: logoKey ? LOGO_MAP[logoKey] : undefined,
+            accent: p.role === "HOST" ? "bg-violet-400" : "bg-emerald-400",
+            planMonths: p.planMonths,
+            startDate: p.startDate,
           };
-          setMyServices(myRes.data.map(mapPool));
-        }
-      } catch (e) {
-        console.error("Failed to load plans from backend", e);
+        };
+        setMyServices(myRes.data.map(mapPool));
       }
-    };
+    } catch (e) {
+      console.error("Failed to load plans from backend", e);
+    }
+  };
+
+  useEffect(() => {
     fetchPools();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLaunch = async (details: LaunchPlanDetails) => {
-    // UPI is pre-validated in share-page before this is called,
-    // but double-check here as a safety net.
     const upi = details.hostUpiId?.trim() ?? ""
     if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) {
       throw new Error(`Invalid UPI ID "${upi || "(empty)"}". Use a format like yourname@okaxis.`)
     }
 
     setIsCreating(true);
+    const planMonths = details.planMonths ?? 1;
+
     try {
       await poolsApi.create({
         serviceType: "CUSTOM",
         customName: details.name,
         totalPlanCostINR: details.price * (details.limit + 1),
         totalSeats: details.limit + 1,
-        planMonths: 1,
+        planMonths,
         visibility: details.isPrivate ? "PRIVATE" : "PUBLIC",
         hostUpiId: upi,
         credentials: details.credentials,
       });
-
-      const newService: Service = {
-        name: details.name,
-        host: "You",
-        price: details.price,
-        capacity: details.limit + 1,
-        filled: 1,
-        private: details.isPrivate,
-        brand: details.name.substring(0, 2).toUpperCase(),
-        logoUrl: details.logoUrl,
-        accent: details.isPrivate ? "bg-violet-400" : "bg-emerald-400",
-        planMonths: 1,
-      };
-
-      setMyServices((prev) => [newService, ...prev]);
-      setIsSharing(false);
-      if (details.isPrivate) setActiveShareService(newService);
     } catch (e: any) {
-      // Re-throw so share-page's launchError state can display it inline
-      throw new Error(e?.message ?? "Failed to create pool. Please try again.");
-    } finally {
       setIsCreating(false);
+      throw new Error(e?.message ?? "Failed to create pool. Please try again.");
     }
+
+    // Backend succeeded — update UI state
+    const newService: Service = {
+      name: details.name,
+      host: "You",
+      price: details.price,
+      capacity: details.limit + 1,
+      filled: 1,
+      private: details.isPrivate,
+      brand: details.name.substring(0, 2).toUpperCase(),
+      logoUrl: details.logoUrl,
+      accent: details.isPrivate ? "bg-violet-400" : "bg-emerald-400",
+      planMonths,
+    };
+
+    setMyServices((prev) => [newService, ...prev]);
+    setIsCreating(false);
+    setIsSharing(false);
+    setActiveShareService(newService);
   };
 
   const copyLink = () => {
@@ -249,6 +253,7 @@ export default function Dashboard() {
       <EscrowFlow
         pool={joiningPool}
         onClose={() => { setJoiningPool(null); setIsBrowsing(true); }}
+        onJoinComplete={fetchPools}
       />
 
       {/* Private pool live popup — kept as-is from original */}

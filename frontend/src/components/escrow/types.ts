@@ -42,8 +42,8 @@ export function toEscrowPool(
     inviteLink: creds?.inviteLink ?? null,
     logoUrl: p.logoUrl,
     amount: `INR ${splitAmt.toLocaleString('en-IN')}`,
-    split: `INR ${splitAmt.toLocaleString('en-IN')}/mo`,
-    total: `INR ${totalAmt.toLocaleString('en-IN')}/mo`,
+    split: `INR ${splitAmt.toLocaleString('en-IN')}${p.term === 12 ? '/yr' : '/mo'}`,
+    total: `INR ${totalAmt.toLocaleString('en-IN')}${p.term === 12 ? '/yr' : '/mo'}`,
     members: p.total,
     reference: reference || `SPZ-${Date.now().toString(36).toUpperCase().slice(-6)}`,
   }

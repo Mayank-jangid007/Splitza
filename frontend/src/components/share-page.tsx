@@ -35,6 +35,10 @@ export type LaunchPlanDetails = {
   tier?: string;
   logoUrl?: string;
   hostUpiId?: string;
+  /** "Monthly" or "Yearly" */
+  billingCycle?: string;
+  /** Number of months (1-12 for Monthly, 12 for Yearly) */
+  planMonths?: number;
   credentials?: {
     username?: string;
     password?: string;
@@ -333,6 +337,12 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                       <span className="flex items-center gap-2 font-mono text-[10px] font-black tracking-[.14em] text-slate-400"><Wallet size={13} /> PAYOUT UPI</span>
                       <span className="font-mono text-sm font-black text-slate-100">{upi || "—"}</span>
                     </div>
+                    <div className="flex items-center justify-between rounded-xl border-2 border-slate-700 bg-slate-900 px-4 py-3">
+                      <span className="font-mono text-[10px] font-black tracking-[.14em] text-slate-400">BILLING CYCLE</span>
+                      <span className="font-mono text-sm font-black text-slate-100">
+                        {billing === "Yearly" ? "1 year (12 months)" : `${monthlyMonths} month${Number(monthlyMonths) !== 1 ? "s" : ""}`}
+                      </span>
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -369,6 +379,8 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                         tier: custom ? undefined : selected?.tier,
                         logoUrl: custom ? undefined : selected?.logoUrl,
                         hostUpiId: upi.trim() || undefined,
+                        billingCycle: billing,
+                        planMonths: billing === "Yearly" ? 12 : Math.min(12, Math.max(1, Number(monthlyMonths) || 1)),
                         credentials: {
                           username: username.trim() || undefined,
                           password: password.trim() || undefined,

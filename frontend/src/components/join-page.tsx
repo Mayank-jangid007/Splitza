@@ -83,7 +83,9 @@ export function JoinPage({ pool, dark, onBack }: { pool: MarketplacePool; dark: 
                   <h1 className="mt-3 font-mono text-4xl font-black uppercase leading-[.94] tracking-[-.07em] sm:text-6xl">{pool.service}</h1>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="rounded-full border-2 border-current px-3 py-1 font-mono text-[10px] font-black uppercase">{pool.category}</span>
-                    <span className="rounded-full border-2 border-current px-3 py-1 font-mono text-[10px] font-black uppercase">{pool.term}-month plan</span>
+                    <span className="rounded-full border-2 border-current px-3 py-1 font-mono text-[10px] font-black uppercase">
+                      {pool.term === 12 ? "1 year plan" : `${pool.term}-month plan`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -96,8 +98,8 @@ export function JoinPage({ pool, dark, onBack }: { pool: MarketplacePool; dark: 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {[
                 ["Total seats", `${pool.total}`, `${pool.available} available`],
-                ["Plan duration", `${pool.term} mo`, "Fixed term"],
-                ["Upfront split", `₹${pool.price}`, "Due at checkout"],
+                ["Plan duration", pool.term === 12 ? "1 year" : `${pool.term} mo`, pool.term === 12 ? "Annual billing" : "Fixed term"],
+                ["Upfront split", `₹${pool.price}`, pool.term === 12 ? "per year" : "Due at checkout"],
               ].map(([label, val, sub]) => (
                 <div key={label} className={`rounded-xl border-2 p-4 ${surface}`}>
                   <p className={`font-mono text-[10px] font-black uppercase tracking-widest ${muted}`}>{label}</p>

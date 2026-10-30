@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  CalendarClock, Check, Loader2, Quote, Receipt,
-  ScrollText, ShieldCheck, Star, Wallet, X,
+  CalendarClock, Check, Loader2, Receipt,
+  ShieldCheck, Star, Wallet, X,
 } from 'lucide-react'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { cn } from '@/lib/utils'
 import { formatINR, splitPrice, toneClass, type Pool } from '@/lib/pools'
 import { PoolOccupancy } from './pool-occupancy'
+import { PlanDetails } from './plan-details'
 
 type PoolDetailDialogProps = {
   pool: Pool | null
@@ -113,8 +114,8 @@ export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: P
 
               {/* Stats */}
               <dl className="grid grid-cols-3 gap-3">
-                <Stat icon={<Receipt className="size-4" />} label="Plan cost" value={formatINR(pool.totalCost)} suffix="per month" className="bg-white" />
-                <Stat icon={<Wallet className="size-4" />} label="Your split" value={formatINR(splitPrice(pool))} suffix="per person" className="bg-mint" />
+                <Stat icon={<Receipt className="size-4" />} label="Plan cost" value={formatINR(pool.totalCost)} suffix={pool.cycleDays >= 360 ? "per year" : "per month"} className="bg-white" />
+                <Stat icon={<Wallet className="size-4" />} label="Your split" value={formatINR(splitPrice(pool))} suffix={pool.cycleDays >= 360 ? "per year" : "per person"} className="bg-mint" />
                 <Stat icon={<CalendarClock className="size-4" />} label="Days left" value={`${pool.daysLeft} days`} suffix={`of ${pool.cycleDays}`} className="bg-bubble" />
               </dl>
 
@@ -130,28 +131,11 @@ export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: P
                 ))}
               </ul>
 
-              {/* Rules */}
-              <section aria-labelledby="plan-rules-heading" className="brut-sm flex flex-col gap-4 rounded-2xl bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 id="plan-rules-heading" className="flex items-center gap-2 text-base font-extrabold">
-                    <ScrollText className="size-5" aria-hidden="true" />
-                    Plan rules
-                  </h3>
-                  <span className="rounded-full border-2 border-ink bg-lilac px-2.5 py-0.5 text-xs font-bold">Set by {pool.host.split(' ')[0]}</span>
-                </div>
-                <blockquote className="relative rounded-xl border-2 border-ink bg-cream p-3 pl-10 text-sm leading-relaxed font-medium">
-                  <Quote className="absolute top-3 left-3 size-4 fill-ink" aria-hidden="true" />
-                  {pool.description}
-                </blockquote>
-                <ol className="flex flex-col gap-2.5">
-                  {pool.rules.map((rule, index) => (
-                    <li key={rule} className="flex items-start gap-3 text-sm">
-                      <span className="grid size-6 shrink-0 place-items-center rounded-full border-2 border-ink bg-sun font-mono text-xs font-bold">{index + 1}</span>
-                      <span className="pt-0.5 leading-snug font-medium">{rule}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
+              {/* Plan details */}
+              <PlanDetails
+                text={[pool.description, ...pool.rules.map((r, i) => `${i + 1}. ${r}`)].join('\n')}
+                setBy={pool.host.split(' ')[0]}
+              />
 
               {/* CTA */}
               <div className="flex flex-col gap-3">
