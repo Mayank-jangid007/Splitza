@@ -66,6 +66,10 @@ interface CustomPoolInput extends BasePoolInput {
   totalPlanCostINR: number;
   totalSeats: number;
   planMonths: number;
+  /** Exact term in days (1–365). When set, UI shows this instead of months × 30. */
+  planDays?: number;
+  /** Original monthly plan cost (before pro-rating by days). */
+  monthlyPlanCost?: number;
 }
 
 export type CreatePoolInput = PreStoredPoolInput | CustomPoolInput;
@@ -226,6 +230,11 @@ function validateCustomInput(input: CustomPoolInput): void {
       `planMonths cannot exceed ${MAX_PLAN_MONTHS}.`
     );
   }
+  if (input.planDays !== undefined) {
+    if (!Number.isInteger(input.planDays) || input.planDays < 1 || input.planDays > 365) {
+      throw new PoolServiceError("INVALID_DAYS", "planDays must be an integer between 1 and 365.");
+    }
+  }
 }
 
 // Credential encryption lives in credential.service.ts
@@ -274,6 +283,11 @@ export async function createPool(
     isCustom     = true;
   }
 
+  const planDays: number | null =
+    input.serviceType === "CUSTOM" && input.planDays
+      ? input.planDays
+      : planMonths * 30;
+
   // ── 3. Per-seat arithmetic ───────────────────────────────────
   // Price per seat = totalCost / maxSeats, rounded up to nearest paisa
   const pricePerSeat: Decimal = totalCostINR
@@ -311,13 +325,18 @@ export async function createPool(
           platformConfigId,
           customName,
           customPricePerMonth: isCustom
-            ? totalCostINR.dividedBy(planMonths).toDecimalPlaces(2)
+            ? toDecimal(
+                input.serviceType === "CUSTOM" && input.monthlyPlanCost
+                  ? input.monthlyPlanCost
+                  : Number(totalCostINR.dividedBy(planMonths)),
+              )
             : null,
           customMaxSeats: isCustom ? maxSeats : null,
           isCustom,
           maxSeats,
           pricePerSeat,
           planMonths,
+          planDays,
           currency:           "INR",
           visibility:         input.visibility,
           status:             "OPEN",

@@ -22,6 +22,8 @@ export type Service = {
   logoUrl?: string;
   accent: string;
   planMonths: number;
+  planDays?: number; // override totalDays when set directly (e.g. 11 days)
+  monthlyPlanCost?: number;
   startDate?: string; // ISO string — used to calculate days remaining
 };
 
@@ -173,7 +175,7 @@ export function HostPlanDetails({
   const hostTotalShare = service.price * service.planMonths;
   const totalRecoveredFromMembers =
     service.price * Math.max(service.filled - 1, 0) * service.planMonths;
-  const totalPlanDays = service.planMonths * 30;
+  const totalPlanDays = service.planDays && service.planDays > 0 ? service.planDays : service.planMonths * 30;
   // Calculate elapsed days from startDate if available, otherwise estimate as 0
   const elapsedDays = service.startDate
     ? Math.floor((Date.now() - new Date(service.startDate).getTime()) / 86_400_000)

@@ -15,6 +15,8 @@ export interface Pool {
   totalDays: number
   pricePerSeat: number
   planMonths: number
+  /** Full monthly plan cost before pro-rating (for the split formula). */
+  monthlyPlanCost?: number
   escrowStep: EscrowStep
   endsOn: string
   /** Card color. Falls back to a stable color derived from the pool id. */

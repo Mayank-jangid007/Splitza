@@ -8,7 +8,39 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react"
+import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
+
+// Avatar: shows Google profile photo if available, else name initial
+function UserAvatar({ avatarUrl, name, size = 28 }: { avatarUrl?: string | null; name?: string | null; size?: number }) {
+  const [imgError, setImgError] = useState(false)
+  const initial = name?.charAt(0)?.toUpperCase() || "U"
+  const px = size // size is already in pixels
+
+  if (avatarUrl && !imgError) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={name || "User"}
+        width={px}
+        height={px}
+        referrerPolicy="no-referrer"
+        onError={() => setImgError(true)}
+        style={{ width: px, height: px }}
+        className="rounded-full object-cover shrink-0"
+      />
+    )
+  }
+
+  return (
+    <span
+      style={{ width: px, height: px }}
+      className="grid shrink-0 place-items-center rounded-full bg-[var(--dash-violet)] font-black uppercase text-[var(--dash-violet-ink)] text-sm"
+    >
+      {initial}
+    </span>
+  )
+}
 
 export default function ProfileDropdown() {
   const { user, logout } = useAuth()
@@ -41,9 +73,7 @@ export default function ProfileDropdown() {
     return (
       <div className="relative">
         <button className="flex items-center gap-1.5 rounded-full border border-[var(--dash-border)] bg-[var(--dash-surface-strong)] py-1 pl-1 pr-2.5 font-bold text-[var(--dash-ink)] transition">
-          <span className="grid size-7 place-items-center rounded-full bg-[var(--dash-violet)] font-black uppercase text-[var(--dash-violet-ink)] text-sm">
-            U
-          </span>
+          <UserAvatar avatarUrl={user?.avatarUrl} name={user?.name} size={7} />
           <span className="hidden text-xs font-semibold sm:block">Account</span>
           <ChevronDown size={13} strokeWidth={2.5} className="text-[var(--dash-ink-soft)] rotate-0" />
         </button>
@@ -59,9 +89,7 @@ export default function ProfileDropdown() {
         onClick={() => setProfileOpen((value) => !value)}
         className="flex items-center gap-1.5 rounded-full border border-[var(--dash-border)] bg-[var(--dash-surface-strong)] py-1 pl-1 pr-2.5 font-bold text-[var(--dash-ink)] transition hover:bg-[var(--dash-surface-strong)] hover:border-[var(--dash-ink-soft)]"
       >
-        <span className="grid size-7 place-items-center rounded-full bg-[var(--dash-violet)] font-black uppercase text-[var(--dash-violet-ink)] text-sm">
-          {user?.name?.charAt(0) || "U"}
-        </span>
+        <UserAvatar avatarUrl={user?.avatarUrl} name={user?.name} size={7} />
         <span className="hidden text-xs font-semibold sm:block">
           {user?.name?.split(" ")[0] || "Account"}
         </span>
@@ -87,9 +115,7 @@ export default function ProfileDropdown() {
         {/* User info */}
         <div className="border-b border-[var(--dash-border)] px-3 pb-3 pt-2">
           <div className="flex items-center gap-2.5">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--dash-violet)] font-black uppercase text-[var(--dash-violet-ink)]">
-              {user?.name?.charAt(0) || "U"}
-            </span>
+            <UserAvatar avatarUrl={user?.avatarUrl} name={user?.name} size={9} />
             <div className="min-w-0">
               <p className="truncate text-xs font-bold text-[var(--dash-ink)]">
                 {user?.name || "User"}

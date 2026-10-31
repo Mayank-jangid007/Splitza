@@ -33,6 +33,7 @@ interface DashboardViewProps {
   onLogout?: () => void
   onOpenWallet?: () => void
   onOpenFeedback?: () => void
+  userEmail?: string
   /** When provided, renders this content instead of the pools view */
   marketplaceContent?: React.ReactNode
   isBrowsing?: boolean
@@ -50,6 +51,7 @@ export function DashboardView({
   onLogout,
   onOpenWallet,
   onOpenFeedback,
+  userEmail,
   marketplaceContent,
   isBrowsing = false,
 }: DashboardViewProps) {
@@ -92,6 +94,7 @@ export function DashboardView({
             unreadMessages={unreadMessages}
             userName={userName}
             userInitial={userName.charAt(0).toUpperCase()}
+            userEmail={userEmail}
             title={isBrowsing ? 'Marketplace Hub' : 'Your shared pools'}
             showGreeting={!isBrowsing}
             onOpenWallet={onOpenWallet}

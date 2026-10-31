@@ -74,13 +74,18 @@ function Credentials({ email, password }: { email: string; password: string }) {
 // ── Meta section (cost + group) ────────────────────────────────
 function Meta({ pool }: { pool: Pool }) {
   const open = pool.capacity - pool.filledSeats
+  const isProrated = pool.totalDays > 0 && pool.totalDays !== pool.planMonths * 30
+  const monthly = Math.round(pool.monthlyPlanCost ?? (pool.pricePerSeat * pool.capacity * 30) / Math.max(1, pool.totalDays))
   return (
+    <div className="flex flex-col gap-3">
     <div className="grid grid-cols-2 divide-x-2 divide-[#151515] overflow-hidden rounded-[24px] border-[2.5px] border-[#151515] bg-white shadow-[4px_4px_0_0_#151515]">
       <div className="flex flex-col gap-1.5 p-4">
         <h3 className={SECTION}>Your cost</h3>
         <p className={`${MONO} text-xl font-bold leading-tight`}>
           ₹{pool.pricePerSeat.toLocaleString('en-IN')}
-          <span className="text-xs font-medium text-[#6b6558]"> / month</span>
+          <span className="text-xs font-medium text-[#6b6558]">
+            {pool.totalDays !== pool.planMonths * 30 ? ' / term' : ' / month'}
+          </span>
         </p>
         <span className={`${MONO} inline-flex w-fit items-center gap-1 rounded-full border-2 border-[#151515] bg-[#8de89a] px-2 py-0.5 text-[10px] font-bold`}>
           ✓ Paid · Escrow
@@ -107,6 +112,15 @@ function Meta({ pool }: { pool: Pool }) {
           )}
         </div>
       </div>
+    </div>
+      {isProrated && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border-2 border-dashed border-[#151515]/50 bg-white/70 px-3.5 py-2.5">
+          <span className={`${MONO} rounded-full border-2 border-[#151515] bg-[#cdb0ea] px-2 py-0.5 text-[10px] font-bold`}>Pro-rated</span>
+          <span className={`${MONO} text-xs font-bold text-[#3d3a32]`}>
+            ₹{monthly} ÷ 30 × {pool.totalDays} days ÷ {pool.capacity} seats = ₹{Math.round(pool.pricePerSeat)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

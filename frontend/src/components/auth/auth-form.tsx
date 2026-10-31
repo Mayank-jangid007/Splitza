@@ -84,8 +84,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         {/* Social buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`}
             className={cn(
               'flex h-12 items-center justify-center gap-2.5 rounded-xl border-2 border-foreground bg-white text-sm font-bold',
               neoLift,
@@ -94,7 +94,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           >
             <GoogleMark />
             Google
-          </button>
+          </a>
           <button
             type="button"
             className={cn(

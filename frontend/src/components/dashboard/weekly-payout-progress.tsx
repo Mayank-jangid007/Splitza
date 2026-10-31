@@ -11,8 +11,9 @@ export function buildWeeks(
   pricePerSeat: number,
   filledSeats: number,
   daysElapsed: number,
+  totalDaysOverride?: number,
 ): Week[] {
-  const totalDays = planMonths * 30
+  const totalDays = totalDaysOverride && totalDaysOverride > 0 ? totalDaysOverride : planMonths * 30
   const fullWeeks = Math.floor(totalDays / 7)
   const remainderDays = totalDays % 7
   const totalWeeks = fullWeeks + (remainderDays > 0 ? 1 : 0)

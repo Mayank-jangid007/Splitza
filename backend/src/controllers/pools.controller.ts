@@ -233,6 +233,8 @@ export async function handleGetMyPools(
         status: p.status,
         visibility: p.visibility,
         planMonths: p.planMonths,
+        planDays: p.planDays ?? p.planMonths * 30,
+        monthlyPlanCost: p.customPricePerMonth != null ? Number(p.customPricePerMonth) : undefined,
         startDate: p.startDate?.toISOString(),
         role: m.role, // "HOST" | "MEMBER"
       };

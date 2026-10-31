@@ -38,7 +38,11 @@ export type LaunchPlanDetails = {
   /** "Monthly" or "Yearly" */
   billingCycle?: string;
   /** Number of months (1-12 for Monthly, 12 for Yearly) */
-  planMonths?: number;
+  planMonths?: number
+  /** Number of days (1-365, used when billingCycle is "Days") */
+  planDays?: number;
+  /** Full monthly plan price from the form (before split / pro-rate). */
+  monthlyPrice?: number;
   credentials?: {
     username?: string;
     password?: string;
@@ -56,6 +60,7 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
   const [customLimit, setCustomLimit] = useState("2")
   const [billing, setBilling] = useState("Monthly")
   const [monthlyMonths, setMonthlyMonths] = useState("1")
+  const [customDays, setCustomDays] = useState("10")
   const [visibility, setVisibility] = useState<"public" | "private">("public")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -82,6 +87,8 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
         billing={billing}
         monthlyMonths={monthlyMonths}
         onMonthlyMonths={setMonthlyMonths}
+        customDays={customDays}
+        onCustomDays={setCustomDays}
         onName={setCustomName}
         onPrice={setCustomPrice}
         onLimit={setCustomLimit}
@@ -340,7 +347,7 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                     <div className="flex items-center justify-between rounded-xl border-2 border-slate-700 bg-slate-900 px-4 py-3">
                       <span className="font-mono text-[10px] font-black tracking-[.14em] text-slate-400">BILLING CYCLE</span>
                       <span className="font-mono text-sm font-black text-slate-100">
-                        {billing === "Yearly" ? "1 year (12 months)" : `${monthlyMonths} month${Number(monthlyMonths) !== 1 ? "s" : ""}`}
+                        {billing === "Yearly" ? "1 year (12 months)" : billing === "Days" ? `${customDays} days` : `${monthlyMonths} month${Number(monthlyMonths) !== 1 ? "s" : ""}`}
                       </span>
                     </div>
                   </div>
@@ -374,13 +381,15 @@ export function SharePage({ dark, onBack, onLaunch }: { dark: boolean; onBack: (
                       await onLaunch?.({
                         name: name || "Custom split",
                         price: Math.max(0, Math.round(price / Math.max(1, limit))),
+                        monthlyPrice: Math.max(0, Number(price) || 0),
                         limit: Number(limit) || 1,
                         isPrivate: visibility === "private",
                         tier: custom ? undefined : selected?.tier,
                         logoUrl: custom ? undefined : selected?.logoUrl,
                         hostUpiId: upi.trim() || undefined,
                         billingCycle: billing,
-                        planMonths: billing === "Yearly" ? 12 : Math.min(12, Math.max(1, Number(monthlyMonths) || 1)),
+                        planMonths: billing === "Yearly" ? 12 : billing === "Days" ? Math.max(1, Math.ceil(Number(customDays) / 30)) : Math.min(12, Math.max(1, Number(monthlyMonths) || 1)),
+                        planDays: billing === "Days" ? Math.min(365, Math.max(1, Number(customDays) || 10)) : undefined,
                         credentials: {
                           username: username.trim() || undefined,
                           password: password.trim() || undefined,
@@ -420,6 +429,8 @@ type CustomProps = {
   billing: string
   monthlyMonths: string
   onMonthlyMonths: (value: string) => void
+  customDays: string
+  onCustomDays: (value: string) => void
   onName: (value: string) => void
   onPrice: (value: string) => void
   onLimit: (value: string) => void
@@ -428,7 +439,7 @@ type CustomProps = {
   onNext: () => void
 }
 
-function CustomParameters({ dark, name, price, limit, billing, monthlyMonths, onMonthlyMonths, onName, onPrice, onLimit, onBilling, onBack, onNext }: CustomProps) {
+function CustomParameters({ dark, name, price, limit, billing, monthlyMonths, onMonthlyMonths, customDays, onCustomDays, onName, onPrice, onLimit, onBilling, onBack, onNext }: CustomProps) {
   const shell = dark ? "bg-[#07111f] text-slate-50" : "bg-slate-100 text-slate-950"
   const field = dark ? "border-slate-700 bg-slate-900 text-white" : "border-slate-300 bg-white"
   const nameInvalid = name !== "" && !name.trim()
@@ -444,9 +455,25 @@ function CustomParameters({ dark, name, price, limit, billing, monthlyMonths, on
           <div className="flex items-center justify-between"><div><p className="font-mono text-[10px] font-black tracking-[.16em] text-violet-300">TIER &amp; COST</p><h2 className="mt-2 font-mono text-2xl font-black">Custom split parameters</h2></div><Sparkles className="text-amber-300" size={24} /></div>
           <label className="mt-8 block font-mono text-[10px] font-black text-violet-200">01 / SUBSCRIPTION NAME<input value={name} onChange={e => onName(e.target.value)} placeholder="e.g. Figma Professional" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-base font-black outline-none transition focus:border-violet-300 ${nameInvalid ? "border-red-500 focus:border-red-400" : field}`} /></label>
           {nameInvalid && <span role="alert" className="mt-1 block font-mono text-[11px] font-bold text-red-400">⚠ Subscription name cannot be empty.</span>}
-          <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"><div className="grid gap-1"><label className="block font-mono text-[10px] font-black text-emerald-200"><span className="block tracking-[.14em]">02 / PRICE (₹/month)</span><input type="number" min="1" value={price} onChange={e => onPrice(e.target.value)} placeholder="649" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-2xl font-black outline-none transition ${priceInvalid ? "border-red-500 focus:border-red-400" : priceTooLow ? "border-amber-400 focus:border-amber-300" : `focus:border-emerald-300 ${field}`}`} /></label>{priceInvalid && <span role="alert" className="font-mono text-[11px] font-bold text-red-400">⚠ Price must be at least ₹1.</span>}{priceTooLow && <span role="alert" className="font-mono text-[11px] font-bold text-amber-400">⚠ Minimum price per slot is ₹10 — the backend will reject lower values.</span>}</div><div className="grid gap-3"><div className="flex rounded-xl border-2 border-slate-700 bg-slate-900 p-1"><button type="button" onClick={() => onBilling("Monthly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Monthly" ? "bg-emerald-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-emerald-300"}`}>MONTHLY</button><button type="button" onClick={() => onBilling("Yearly")} className={`flex-1 rounded-lg px-4 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Yearly" ? "bg-violet-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-violet-300"}`}>YEARLY</button></div>{billing === "Monthly" && <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-emerald-300/40 bg-slate-900 px-3 py-2.5 font-mono"><span className="grid gap-0.5"><span className="text-[9px] font-black tracking-[.14em] text-emerald-200">BILLING TERM</span><span className="text-[10px] font-bold text-slate-400">How many months?</span></span><span className="flex items-center gap-2"><input aria-label="Number of months" type="number" min="1" max="12" value={monthlyMonths} onChange={e => onMonthlyMonths(e.target.value)} className={`w-16 rounded-lg border-2 px-2 py-2 text-center font-mono text-sm font-black outline-none focus:border-emerald-300 ${field}`} /></span></label>}</div></div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"><div className="grid gap-1"><label className="block font-mono text-[10px] font-black text-emerald-200"><span className="block tracking-[.14em]">02 / PRICE (₹/month)</span><input type="number" min="1" value={price} onChange={e => onPrice(e.target.value)} placeholder="649" className={`mt-2 w-full rounded-xl border-[3px] px-4 py-4 font-mono text-2xl font-black outline-none transition ${priceInvalid ? "border-red-500 focus:border-red-400" : priceTooLow ? "border-amber-400 focus:border-amber-300" : `focus:border-emerald-300 ${field}`}`} /></label>{priceInvalid && <span role="alert" className="font-mono text-[11px] font-bold text-red-400">⚠ Price must be at least ₹1.</span>}{priceTooLow && <span role="alert" className="font-mono text-[11px] font-bold text-amber-400">⚠ Minimum price per slot is ₹10 — the backend will reject lower values.</span>}</div><div className="grid gap-3"><div className="flex rounded-xl border-2 border-slate-700 bg-slate-900 p-1"><button type="button" onClick={() => onBilling("Monthly")} className={`flex-1 rounded-lg px-3 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Monthly" ? "bg-emerald-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-emerald-300"}`}>MONTHLY</button><button type="button" onClick={() => onBilling("Yearly")} className={`flex-1 rounded-lg px-3 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Yearly" ? "bg-violet-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-violet-300"}`}>YEARLY</button><button type="button" onClick={() => onBilling("Days")} className={`flex-1 rounded-lg px-3 py-3 font-mono text-[10px] font-black transition-colors ${billing === "Days" ? "bg-amber-300 text-slate-950 shadow-[2px_2px_0_#020617]" : "text-slate-400 hover:text-amber-300"}`}>DAYS</button></div>{billing === "Monthly" && <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-emerald-300/40 bg-slate-900 px-3 py-2.5 font-mono"><span className="grid gap-0.5"><span className="text-[9px] font-black tracking-[.14em] text-emerald-200">BILLING TERM</span><span className="text-[10px] font-bold text-slate-400">How many months?</span></span><span className="flex items-center gap-2"><input aria-label="Number of months" type="number" min="1" max="12" value={monthlyMonths} onChange={e => onMonthlyMonths(e.target.value)} className={`w-16 rounded-lg border-2 px-2 py-2 text-center font-mono text-sm font-black outline-none focus:border-emerald-300 ${field}`} /></span></label>}{billing === "Days" && <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-amber-300/40 bg-slate-900 px-3 py-2.5 font-mono"><span className="grid gap-0.5"><span className="text-[9px] font-black tracking-[.14em] text-amber-200">DURATION</span><span className="text-[10px] font-bold text-slate-400">How many days? (1–365)</span></span><span className="flex items-center gap-2"><input aria-label="Number of days" type="number" min="1" max="365" value={customDays} onChange={e => onCustomDays(e.target.value)} className={`w-20 rounded-lg border-2 px-2 py-2 text-center font-mono text-sm font-black outline-none focus:border-amber-300 ${field}`} /></span></label>}</div></div>
           <div className="mt-6 rounded-2xl border-[3px] border-amber-300/80 bg-slate-900 p-4 shadow-[4px_4px_0_#fbbf24]"><div className="flex items-center justify-between"><label className="font-mono text-[10px] font-black text-amber-200">03 / MEMBER LIMIT</label><span className="font-mono text-[9px] text-slate-400">EXCLUDING YOU</span></div><div className="mt-3 flex items-center justify-between gap-4"><button type="button" onClick={() => onLimit(String(Math.max(1, Number(limit || 1) - 1)))} className="grid size-12 place-items-center rounded-xl border-2 border-amber-300 bg-slate-950 text-amber-300 transition hover:bg-amber-300 hover:text-slate-950"><Minus size={18} /></button><span className="font-mono text-5xl font-black text-amber-300">{limit || 1}</span><button type="button" onClick={() => onLimit(String(Math.min(12, Number(limit || 1) + 1)))} className="grid size-12 place-items-center rounded-xl border-2 border-amber-300 bg-slate-950 text-amber-300 transition hover:bg-amber-300 hover:text-slate-950"><Plus size={18} /></button></div></div>
-          <div className="mt-6 flex items-center justify-between border-t-2 border-slate-800 pt-5"><span className="font-mono text-[10px] text-slate-400">EST. PAYOUT / MEMBER</span><strong className="font-mono text-xl text-emerald-300">₹{Math.round((Number(price) || 0) / Math.max(1, Number(limit) || 1))}</strong></div>
+          {(() => {
+            const monthly = Number(price) || 0
+            const memberSeats = Math.max(1, Number(limit) || 1)
+            const seats = memberSeats + 1
+            const days = billing === "Days" ? Math.min(365, Math.max(1, Number(customDays) || 10)) : null
+            const split = days
+              ? Math.round((monthly / 30) * days / seats)
+              : Math.round(monthly / memberSeats)
+            return (
+              <div className="mt-6 border-t-2 border-slate-800 pt-5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-slate-400">EST. PAYOUT / MEMBER</span>
+                  <strong className="font-mono text-xl text-emerald-300">₹{split}</strong>
+                </div>
+              </div>
+            )
+          })()}
           <div className="mt-6 flex justify-end"><button disabled={!name.trim() || !price || Number(price) < 1} onClick={onNext} className="inline-flex items-center gap-2 rounded-xl border-[3px] border-black bg-emerald-300 px-5 py-3 font-mono text-[10px] font-black text-slate-950 shadow-[4px_4px_0_#fbbf24] transition hover:translate-x-0.5 hover:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40">CONTINUE TO SEATS <ArrowRight size={15} /></button></div>
         </div>
       </div>

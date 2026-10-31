@@ -16,8 +16,12 @@ import { Check, Copy, Lock, MessageCircle, Send } from "lucide-react";
 // Adapter: backend ApiPool / Service → UI Pool
 // ---------------------------------------------------------------------------
 
-function getPlanLifespan(planMonths: number, startDate?: string): { daysLeft: number; totalDays: number; endsOn: string } {
-  const totalDays = planMonths * 30;
+function getPlanLifespan(
+  planMonths: number,
+  startDate?: string,
+  planDays?: number | null,
+): { daysLeft: number; totalDays: number; endsOn: string } {
+  const totalDays = planDays && planDays > 0 ? planDays : planMonths * 30;
   if (!startDate) return { daysLeft: totalDays, totalDays, endsOn: "—" };
   const start = new Date(startDate);
   const end = new Date(start.getTime() + totalDays * 86_400_000);
@@ -45,7 +49,7 @@ const LOGO_MAP: Record<string, string> = {
 function apiPoolToUIPool(p: ApiPool, role: "host" | "member" = "host"): Pool {
   const poolName = p.name || p.platformName || "Platform Plan";
   const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
-  const { daysLeft, totalDays, endsOn } = getPlanLifespan(p.planMonths, p.startDate);
+  const { daysLeft, totalDays, endsOn } = getPlanLifespan(p.planMonths, p.startDate, p.planDays);
   return {
     id: p.id,
     name: poolName,
@@ -60,12 +64,13 @@ function apiPoolToUIPool(p: ApiPool, role: "host" | "member" = "host"): Pool {
     endsOn,
     pricePerSeat: p.pricePerSeat,
     planMonths: p.planMonths,
+    monthlyPlanCost: p.monthlyPlanCost,
     escrowStep: computeEscrowStep(p),
   };
 }
 
 function serviceToUIPool(s: Service, id: string): Pool {
-  const { daysLeft, totalDays, endsOn } = getPlanLifespan(s.planMonths ?? 1, s.startDate);
+  const { daysLeft, totalDays, endsOn } = getPlanLifespan(s.planMonths ?? 1, s.startDate, s.planDays);
   const role: "host" | "member" = s.host === "You" ? "host" : "member";
   return {
     id,
@@ -81,6 +86,7 @@ function serviceToUIPool(s: Service, id: string): Pool {
     endsOn,
     pricePerSeat: s.price,
     planMonths: s.planMonths ?? 1,
+    monthlyPlanCost: s.monthlyPlanCost,
     escrowStep: 1,
   };
 }
@@ -105,6 +111,7 @@ const ROUTES: DashboardRoutes = {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const userName = user?.name?.split(" ")[0] ?? "You";
+  const userEmail = user?.email ?? "";
 
   const [isSharing, setIsSharing] = useState(false);
   const [isBrowsing, setIsBrowsing] = useState(false);
@@ -135,6 +142,8 @@ export default function Dashboard() {
             logoUrl: logoKey ? LOGO_MAP[logoKey] : undefined,
             accent: p.role === "HOST" ? "bg-violet-400" : "bg-emerald-400",
             planMonths: p.planMonths,
+            planDays: p.planDays,
+            monthlyPlanCost: p.monthlyPlanCost,
             startDate: p.startDate,
           };
         };
@@ -157,15 +166,24 @@ export default function Dashboard() {
     }
 
     setIsCreating(true);
-    const planMonths = details.planMonths ?? 1;
+    const seats = details.limit + 1
+    const monthlyPrice = details.monthlyPrice ?? details.price * Math.max(1, details.limit)
+    // If host specified days directly, use that; otherwise convert months → days
+    const planDays = details.planDays ?? (details.planMonths ?? 1) * 30
+    const planMonths = Math.max(1, Math.ceil(planDays / 30))
+    // ₹monthly ÷ 30 × days  (then backend splits by seats)
+    const totalPlanCostINR = Math.max(1, Math.round((monthlyPrice / 30) * planDays))
+    const pricePerSeat = Math.max(1, Math.round(totalPlanCostINR / seats))
 
     try {
       await poolsApi.create({
         serviceType: "CUSTOM",
         customName: details.name,
-        totalPlanCostINR: details.price * (details.limit + 1),
-        totalSeats: details.limit + 1,
+        totalPlanCostINR,
+        totalSeats: seats,
         planMonths,
+        planDays,
+        monthlyPlanCost: monthlyPrice,
         visibility: details.isPrivate ? "PRIVATE" : "PUBLIC",
         hostUpiId: upi,
         credentials: details.credentials,
@@ -179,14 +197,16 @@ export default function Dashboard() {
     const newService: Service = {
       name: details.name,
       host: "You",
-      price: details.price,
-      capacity: details.limit + 1,
+      price: pricePerSeat,
+      capacity: seats,
       filled: 1,
       private: details.isPrivate,
       brand: details.name.substring(0, 2).toUpperCase(),
       logoUrl: details.logoUrl,
       accent: details.isPrivate ? "bg-violet-400" : "bg-emerald-400",
       planMonths,
+      planDays,
+      monthlyPlanCost: monthlyPrice,
     };
 
     setMyServices((prev) => [newService, ...prev]);

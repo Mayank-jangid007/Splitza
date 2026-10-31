@@ -49,6 +49,7 @@ export interface MarketplacePoolItem {
   openSeats: number;
   fillPercent: number;
   planMonths: number;
+  planDays: number;
   currency: string;
   isCustom: boolean;
   status: string;
@@ -169,6 +170,7 @@ export async function getMarketplacePools(
         pricePerSeat:   true,
         maxSeats:       true,
         planMonths:     true,
+        planDays:       true,
         currency:       true,
         status:         true,
         createdAt:      true,
@@ -225,6 +227,7 @@ export async function getMarketplacePools(
       openSeats,
       fillPercent,
       planMonths:      row.planMonths,
+      planDays:        row.planDays ?? row.planMonths * 30,
       currency:        row.currency,
       isCustom:        row.isCustom,
       status:          row.status,
@@ -308,6 +311,7 @@ export async function getPrivatePoolByToken(
     openSeats,
     fillPercent:     Math.round((filledSeats / pool.maxSeats) * 100),
     planMonths:      pool.planMonths,
+    planDays:        pool.planDays ?? pool.planMonths * 30,
     currency:        pool.currency,
     isCustom:        pool.isCustom,
     status:          pool.status,

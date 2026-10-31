@@ -6,6 +6,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
+import passport from "./services/googleOAuth";
 
 import authRoutes from "./routes/auth";
 import planRoutes from "./routes/plans";
@@ -22,6 +23,7 @@ import { startOtpSubscriber } from "./services/pubsub";
 import { closeBrowser } from "./services/bot";
 
 dotenv.config();
+
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "5000", 10);
@@ -42,6 +44,7 @@ app.use(cors({
 }));
 
 app.use(cookieParser());
+app.use(passport.initialize());
 
 // Raw body parser for Razorpay webhook signature verification
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));

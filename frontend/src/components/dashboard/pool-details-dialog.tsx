@@ -173,6 +173,7 @@ const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: Dashboar
                     pool.pricePerSeat,
                     pool.filledSeats,
                     getDaysElapsed(pool),
+                    pool.totalDays,
                   )}
                 />
               </>
@@ -226,6 +227,14 @@ const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: Dashboar
               />
               <Row label="Total plan value" value={formatINR(cost.totalValue)} />
             </dl>
+            {pool.totalDays > 0 && pool.totalDays !== pool.planMonths * 30 && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border-2 border-dashed border-[#151515]/50 bg-white/70 px-3.5 py-2.5">
+                <span className="rounded-full border-2 border-[#151515] bg-[#cdb0ea] px-2 py-0.5 font-mono text-[10px] font-bold">Pro-rated</span>
+                <span className="font-mono text-xs font-bold text-[#3d3a32]">
+                  ₹{Math.round(pool.monthlyPlanCost ?? (pool.pricePerSeat * pool.capacity * 30) / pool.totalDays)} ÷ 30 × {pool.totalDays} days ÷ {pool.capacity} seats = ₹{Math.round(pool.pricePerSeat)}
+                </span>
+              </div>
+            )}
           </section>
         </div>
 

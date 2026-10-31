@@ -240,6 +240,8 @@ export type Pool = {
   status: string;
   visibility?: "PUBLIC" | "PRIVATE";
   planMonths: number;
+  planDays?: number;
+  monthlyPlanCost?: number;
   startDate?: string;
   role?: "HOST" | "MEMBER"; // actual role of the current user in this pool
 };
@@ -258,6 +260,7 @@ export type MarketplacePoolItem = {
   openSeats: number;
   fillPercent: number;
   planMonths: number;
+  planDays?: number;
   currency: string;
   isCustom: boolean;
   status: string;
@@ -279,6 +282,8 @@ export const poolsApi = {
     totalPlanCostINR?: number;
     totalSeats?: number;
     planMonths?: number;
+    planDays?: number;
+    monthlyPlanCost?: number;
     visibility: "PUBLIC" | "PRIVATE";
     hostUpiId: string;
     platformConfigId?: string;

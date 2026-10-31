@@ -119,6 +119,16 @@ export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: P
                 <Stat icon={<CalendarClock className="size-4" />} label="Days left" value={`${pool.daysLeft} days`} suffix={`of ${pool.cycleDays}`} className="bg-bubble" />
               </dl>
 
+              {/* Pro-rated note when pool is shorter than a full month */}
+              {pool.cycleDays < 30 && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border-2 border-dashed border-black-300/60 bg-[#fffbeb] px-3.5 py-2.5">
+                  <span className="rounded-full border-2 border-amber-400 bg-[#c9a8e8] px-2 py-0.5 font-mono text-[10px] font-black">Pro-rated</span>
+                  <span className="font-mono text-xs font-bold text-amber-800">
+                    ₹{pool.totalCost} ÷ 30 × {pool.cycleDays} days ÷ {pool.totalSeats} seats = ₹{splitPrice(pool)}
+                  </span>
+                </div>
+              )}
+
               <PoolOccupancy pool={pool} seatsLeft={seatsLeft} joined={joined} />
 
               {/* Perks */}

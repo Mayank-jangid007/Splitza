@@ -196,8 +196,9 @@ model SplitPool {
   // Derived / locked at creation
   isCustom            Boolean        @default(false)
   maxSeats            Int                               // locked from config or custom
-  pricePerSeat        Decimal        @db.Decimal(10, 2) // per member per month
+  pricePerSeat        Decimal        @db.Decimal(10, 2) // per member for the term
   planMonths          Int            @default(1)        // billing term in months
+  planDays            Int?                              // exact term in days (e.g. 11); null = planMonths × 30
   currency            String         @default("INR") @db.VarChar(3)
 
   // Pool metadata
