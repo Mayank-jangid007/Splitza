@@ -6,10 +6,12 @@
 @theme {
   --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-display: var(--font-unbounded), 'Arial Black', sans-serif;
+  --font-body-neo: var(--font-jetbrains), ui-monospace, monospace;
   
-  --color-sun: #f8c94f;
+  --color-sun: #f8d56b;
   --color-blush: #f48ee3;
-  --color-mint: #8bea94;
+  --color-mint: #a4ecb0;
   --color-lilac: #cdaee8;
   --color-peach: #ff9b63;
   --color-foreground: #141414;
@@ -17,13 +19,19 @@
   --color-border: #141414;
   --color-ring: #141414;
   --color-muted: #f1ebdd;
+  --color-muted-foreground: #5b5a63;
   --color-card: #ffffff;
 
   /* splitza neobrutalist tokens */
   --color-cream: #fbf6ee;
   --color-ink: #151515;
   --color-bubble: #f28fe0;
-  --color-sky: #8fd3f4;
+  --color-sky: #a9c7f7;
+  --color-paper: #fffdf8;
+  --color-lav: #b3a6f7;
+  --color-lav-soft: #dcd5fb;
+  --color-pop: #f5aee3;
+  --color-tang: #ffb59a;
 
   --shadow-brutal-sm: 2px 2px 0 0 #141414;
   --shadow-brutal: 4px 4px 0 0 #141414;
@@ -32,6 +40,9 @@
   --shadow-brut: 4px 4px 0 0 var(--color-ink);
   --shadow-brut-sm: 3px 3px 0 0 var(--color-ink);
   --shadow-brut-lg: 6px 6px 0 0 var(--color-ink);
+  --shadow-neo-sm: 2px 2px 0 0 #151515;
+  --shadow-neo: 4px 4px 0 0 #151515;
+  --shadow-neo-lg: 8px 8px 0 0 #151515;
 
   --animate-marquee-up: marquee-up var(--marquee-duration, 24s) linear infinite;
   --animate-marquee-down: marquee-down var(--marquee-duration, 24s) linear infinite;
@@ -85,6 +96,138 @@
     transparent 1.2px
   );
   background-size: 22px 22px;
+}
+
+/* ── New home (neo-brutalist) utilities ─────────────────────── */
+@utility font-neo-body {
+  font-family: var(--font-body-neo);
+}
+
+@utility font-display-tight {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+@utility dots-bg {
+  background-image: radial-gradient(rgba(11, 11, 15, 0.22) 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+
+@utility stripes-bg {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(11, 11, 15, 0.14) 0 2px,
+    transparent 2px 9px
+  );
+}
+
+@utility grid-bg {
+  background-image:
+    linear-gradient(rgba(11, 11, 15, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 11, 15, 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+@utility neo-press {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #151515;
+  }
+  &:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 #151515;
+  }
+}
+
+@utility animate-pop {
+  animation: pop-in 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@utility animate-float {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+@utility animate-spin-slow {
+  animation: spin-slow 22s linear infinite;
+}
+
+@utility animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+@utility animate-pulse-ring {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(calc(var(--r, 0deg) + 4deg));
+  }
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6) translateY(6px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.splitza-canvas {
+  display: flow-root;
+  min-height: 100vh;
+  background-color: var(--color-lav);
+  background-image:
+    linear-gradient(rgba(11, 11, 15, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 11, 15, 0.09) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-spin-slow,
+  .animate-marquee,
+  .animate-pulse-ring,
+  .animate-pop {
+    animation: none !important;
+  }
 }
 
 /* ── View Transition: circle-reveal theme toggle ─────────────── */

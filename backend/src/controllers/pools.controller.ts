@@ -14,6 +14,11 @@ import {
   getPoolCredentials,
   CredentialAccessError,
 } from "../services/credential.service";
+import {
+  updatePoolVisibility,
+  deletePool,
+  buildInviteUrl,
+} from "../services/poolManagement.service";
 import { prisma } from "../lib/prisma";
 
 // ─────────────────────────────────────────────
@@ -214,6 +219,15 @@ export async function handleGetMyPools(
           include: {
             host: { select: { name: true } },
             memberships: { where: { status: "ACTIVE" }, select: { id: true } },
+            inviteLinks: {
+              where: {
+                isRevoked: false,
+                OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+              },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { token: true },
+            },
           },
         },
       },
@@ -237,6 +251,10 @@ export async function handleGetMyPools(
         monthlyPlanCost: p.customPricePerMonth != null ? Number(p.customPricePerMonth) : undefined,
         startDate: p.startDate?.toISOString(),
         role: m.role, // "HOST" | "MEMBER"
+        inviteUrl:
+          m.role === "HOST"
+            ? buildInviteUrl(p.inviteLinks[0]?.token ?? null)
+            : undefined,
       };
     });
 
@@ -250,6 +268,111 @@ export async function handleGetMyPools(
       ok: false,
       code: "INTERNAL_ERROR",
       message: "An unexpected error occurred while fetching your pools.",
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PATCH /api/pools/:poolId
+//  Host-only: update pool visibility (PUBLIC | PRIVATE)
+// ─────────────────────────────────────────────
+
+export async function handleUpdatePoolVisibility(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const poolId = String(req.params.poolId ?? "");
+    const { visibility } = req.body as {
+      visibility?: "PUBLIC" | "PRIVATE";
+    };
+    const userId = (req as any).user!.id;
+
+    if (!poolId) {
+      res.status(400).json({
+        ok: false,
+        code: "MISSING_POOL_ID",
+        message: "Pool ID is required.",
+      });
+      return;
+    }
+    if (visibility !== "PUBLIC" && visibility !== "PRIVATE") {
+      res.status(400).json({
+        ok: false,
+        code: "INVALID_VISIBILITY",
+        message: "visibility must be PUBLIC or PRIVATE.",
+      });
+      return;
+    }
+
+    const result = await updatePoolVisibility(poolId, userId, visibility);
+
+    res.status(200).json({ ok: true, data: result });
+  } catch (err) {
+    if (err instanceof PoolServiceError) {
+      res.status(err.statusHint).json({
+        ok: false,
+        code: err.code,
+        message: err.message,
+      });
+      return;
+    }
+
+    console.error(
+      `[PATCH /api/pools/${req.params.poolId}] Unhandled error:`,
+      err
+    );
+    res.status(500).json({
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Failed to update pool visibility.",
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+//  DELETE /api/pools/:poolId
+//  Host-only: delete a pool with no paid members
+// ─────────────────────────────────────────────
+
+export async function handleDeletePool(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const poolId = String(req.params.poolId ?? "");
+    const userId = (req as any).user!.id;
+
+    if (!poolId) {
+      res.status(400).json({
+        ok: false,
+        code: "MISSING_POOL_ID",
+        message: "Pool ID is required.",
+      });
+      return;
+    }
+
+    await deletePool(poolId, userId);
+
+    res.status(200).json({ ok: true, data: { poolId } });
+  } catch (err) {
+    if (err instanceof PoolServiceError) {
+      res.status(err.statusHint).json({
+        ok: false,
+        code: err.code,
+        message: err.message,
+      });
+      return;
+    }
+
+    console.error(
+      `[DELETE /api/pools/${req.params.poolId}] Unhandled error:`,
+      err
+    );
+    res.status(500).json({
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Failed to delete the pool.",
     });
   }
 }

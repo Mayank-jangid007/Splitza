@@ -196,20 +196,7 @@ export function MarketplaceHub({
         onClose={() => setSelected(null)}
         onJoin={(pool) => {
           setSelected(null)
-          onJoin({ 
-            id: pool.id,
-            service: pool.service,
-            category: pool.category,
-            term: pool.cycleDays / 30,
-            price: Math.ceil(pool.totalCost / pool.totalSeats),
-            available: pool.seatsLeft,
-            total: pool.totalSeats,
-            accent: 'green',
-            kind: 'PRE_STORED',
-            remainingDays: pool.daysLeft,
-            hostName: pool.host,
-            logoUrl: pool.logo,
-          })
+          onJoin(pool)
         }}
       />
     </div>

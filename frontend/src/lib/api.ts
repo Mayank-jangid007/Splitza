@@ -3,7 +3,7 @@
  * Handles all HTTP requests to the Express backend with JWT interceptors.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 // ---------------------------------------------------------------------------
 // Token management (localStorage in browser)
@@ -244,6 +244,7 @@ export type Pool = {
   monthlyPlanCost?: number;
   startDate?: string;
   role?: "HOST" | "MEMBER"; // actual role of the current user in this pool
+  inviteUrl?: string; // host-only shareable invite link
 };
 
 export type MarketplacePoolItem = {
@@ -296,7 +297,16 @@ export const poolsApi = {
       inviteLink?: string;
     };
   }) =>
-    request<{ ok: boolean; data: any }>("/pools", { method: "POST", body: data }),
+    request<{
+      ok: boolean;
+      data: {
+        poolId: string;
+        status: string;
+        pricePerSeat: number;
+        inviteToken?: string;
+        inviteUrl?: string;
+      };
+    }>("/pools", { method: "POST", body: data }),
 
   getMarketplace: (params?: { search?: string; planMonths?: number; hasOpenSeats?: boolean }) => {
     const qs = new URLSearchParams();
@@ -341,6 +351,20 @@ export const poolsApi = {
   getCredentials: (poolId: string) =>
     request<{ ok: boolean; data: PoolCredentials; code?: string; message?: string }>(
       `/pools/${poolId}/credentials`
+    ),
+
+  updateVisibility: (poolId: string, visibility: "PUBLIC" | "PRIVATE") =>
+    request<{
+      ok: boolean;
+      data: { poolId: string; visibility: "PUBLIC" | "PRIVATE"; inviteUrl: string };
+      code?: string;
+      message?: string;
+    }>(`/pools/${poolId}`, { method: "PATCH", body: { visibility } }),
+
+  remove: (poolId: string) =>
+    request<{ ok: boolean; data: { poolId: string }; code?: string; message?: string }>(
+      `/pools/${poolId}`,
+      { method: "DELETE" }
     ),
 };
 

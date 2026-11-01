@@ -4,6 +4,8 @@ import {
   handleJoinPool,
   handleGetMyPools,
   handleGetPoolCredentials,
+  handleUpdatePoolVisibility,
+  handleDeletePool,
 } from "../controllers/pools.controller";
 import { authenticate } from "../middleware/auth";
 
@@ -20,5 +22,9 @@ router.post("/:poolId/join", authenticate, handleJoinPool);
 
 // Decrypt & return credentials (host or ACTIVE member only)
 router.get("/:poolId/credentials", authenticate, handleGetPoolCredentials);
+
+// Host-only pool controls
+router.patch("/:poolId", authenticate, handleUpdatePoolVisibility);
+router.delete("/:poolId", authenticate, handleDeletePool);
 
 export default router;

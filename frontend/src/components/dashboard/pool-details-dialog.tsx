@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowUpRight, Lock, X } from 'lucide-react'
 import {
@@ -27,14 +27,23 @@ import { PoolLogo } from './pool-logo'
 import { SeatMeter } from './seat-meter'
 import { MonoLabel, Tag } from './tag'
 import { CoHostCard } from './co-host-card'
+import { DeletePool, InvitePeople, Visibility } from './host-pool-controls'
 
 interface PoolDetailsDialogProps {
   pool: Pool | null
   routes: DashboardRoutes
   onClose: () => void
+  onUpdateVisibility?: (pool: Pool, isPublic: boolean) => Promise<void>
+  onDelete?: (pool: Pool) => Promise<void>
 }
 
-export function PoolDetailsDialog({ pool, routes, onClose }: PoolDetailsDialogProps) {
+export function PoolDetailsDialog({
+  pool,
+  routes,
+  onClose,
+  onUpdateVisibility,
+  onDelete,
+}: PoolDetailsDialogProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
 
   // Close on Escape
@@ -105,7 +114,14 @@ export function PoolDetailsDialog({ pool, routes, onClose }: PoolDetailsDialogPr
                 <CoHostCard pool={pool} />
               </div>
             ) : (
-              <DetailsBody ref={closeRef} pool={pool} routes={routes} onClose={onClose} />
+              <DetailsBody
+                ref={closeRef}
+                pool={pool}
+                routes={routes}
+                onClose={onClose}
+                onUpdateVisibility={onUpdateVisibility}
+                onDelete={onDelete}
+              />
             )}
           </motion.div>
         </>
@@ -116,8 +132,16 @@ export function PoolDetailsDialog({ pool, routes, onClose }: PoolDetailsDialogPr
 
 import { forwardRef } from 'react'
 
-const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: DashboardRoutes; onClose: () => void }>(
-  function DetailsBody({ pool, routes, onClose }, ref) {
+const DetailsBody = forwardRef<
+  HTMLButtonElement,
+  {
+    pool: Pool
+    routes: DashboardRoutes
+    onClose: () => void
+    onUpdateVisibility?: (pool: Pool, isPublic: boolean) => Promise<void>
+    onDelete?: (pool: Pool) => Promise<void>
+  }
+>(function DetailsBody({ pool, routes, onClose, onUpdateVisibility, onDelete }, ref) {
     const cost = getCostBreakdown(pool)
     const elapsedPct = Math.min(
       Math.round((getDaysElapsed(pool) / pool.totalDays) * 100),
@@ -236,6 +260,15 @@ const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: Dashboar
               </div>
             )}
           </section>
+
+          {pool.role === 'host' && (
+            <HostControls
+              pool={pool}
+              onUpdateVisibility={onUpdateVisibility}
+              onDelete={onDelete}
+              onClose={onClose}
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-3 border-t-2 border-foreground p-5 sm:flex-row">
@@ -268,6 +301,71 @@ const DetailsBody = forwardRef<HTMLButtonElement, { pool: Pool; routes: Dashboar
   }
 )
 DetailsBody.displayName = 'DetailsBody'
+
+function HostControls({
+  pool,
+  onUpdateVisibility,
+  onDelete,
+  onClose,
+}: {
+  pool: Pool
+  onUpdateVisibility?: (pool: Pool, isPublic: boolean) => Promise<void>
+  onDelete?: (pool: Pool) => Promise<void>
+  onClose: () => void
+}) {
+  const [isPublic, setIsPublic] = useState(!pool.isPrivate)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const link =
+    pool.inviteUrl ??
+    (typeof window !== 'undefined'
+      ? `${window.location.origin}/dashboard#marketplace`
+      : '')
+
+  const changeVisibility = async (nextPublic: boolean) => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onUpdateVisibility?.(pool, nextPublic)
+      setIsPublic(nextPublic)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update visibility.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async () => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onDelete?.(pool)
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the pool.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="space-y-5 border-t-2 border-foreground pt-5" aria-busy={busy}>
+      <Visibility isPublic={isPublic} onChange={changeVisibility} />
+      <InvitePeople link={link} />
+      {error && (
+        <p
+          role="alert"
+          className="rounded-2xl border-2 border-[#b3261e] bg-[#fdecea] px-4 py-3 text-sm font-semibold text-[#b3261e]"
+        >
+          {error}
+        </p>
+      )}
+      <DeletePool onDelete={remove} />
+    </section>
+  )
+}
 
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (

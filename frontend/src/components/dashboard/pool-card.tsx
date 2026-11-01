@@ -91,7 +91,7 @@ export function PoolCard({
           </span>
         </span>
         <span className="font-mono text-xs text-background/70">
-          INR {pool.pricePerSeat.toLocaleString('en-IN')} per seat ·{' '}
+          INR {pool.pricePerSeat.toLocaleString('en-IN')} YOUR SHARE ·{' '}
           {pool.totalDays !== pool.planMonths * 30
             ? `${pool.totalDays} day term`
             : `${pool.planMonths} month term`}

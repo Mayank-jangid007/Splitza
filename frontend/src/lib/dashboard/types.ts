@@ -23,6 +23,8 @@ export interface Pool {
   accent?: PoolAccent
   /** Total plan value in INR. Falls back to pricePerSeat x capacity. */
   poolCapital?: number
+  /** Host-only shareable invite link. */
+  inviteUrl?: string
 }
 
 export interface DashboardRoutes {

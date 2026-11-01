@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 
 export type Service = {
+  id?: string;
+  inviteUrl?: string;
+  role?: 'host' | 'member';
   name: string;
   host: string;
   price: number;

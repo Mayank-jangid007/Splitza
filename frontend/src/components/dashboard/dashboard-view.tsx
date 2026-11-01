@@ -33,6 +33,8 @@ interface DashboardViewProps {
   onLogout?: () => void
   onOpenWallet?: () => void
   onOpenFeedback?: () => void
+  onUpdateVisibility?: (pool: Pool, isPublic: boolean) => Promise<void>
+  onDeletePool?: (pool: Pool) => Promise<void>
   userEmail?: string
   /** When provided, renders this content instead of the pools view */
   marketplaceContent?: React.ReactNode
@@ -51,6 +53,8 @@ export function DashboardView({
   onLogout,
   onOpenWallet,
   onOpenFeedback,
+  onUpdateVisibility,
+  onDeletePool,
   userEmail,
   marketplaceContent,
   isBrowsing = false,
@@ -159,6 +163,8 @@ export function DashboardView({
         pool={selectedPool}
         routes={routes}
         onClose={() => setSelectedPool(null)}
+        onUpdateVisibility={onUpdateVisibility}
+        onDelete={onDeletePool}
       />
     </div>
   )

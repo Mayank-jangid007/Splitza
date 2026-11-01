@@ -114,7 +114,7 @@ export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: P
 
               {/* Stats */}
               <dl className="grid grid-cols-3 gap-3">
-                <Stat icon={<Receipt className="size-4" />} label="Plan cost" value={formatINR(pool.totalCost)} suffix={pool.cycleDays >= 360 ? "per year" : "per month"} className="bg-white" />
+                <Stat icon={<Receipt className="size-4" />} label="Plan cost" value={formatINR(pool.totalCost)} suffix={pool.cycleDays >= 360 ? "per year" : pool.cycleDays === 30 ? "per month" : `${pool.cycleDays} days`} className="bg-white" />
                 <Stat icon={<Wallet className="size-4" />} label="Your split" value={formatINR(splitPrice(pool))} suffix={pool.cycleDays >= 360 ? "per year" : "per person"} className="bg-mint" />
                 <Stat icon={<CalendarClock className="size-4" />} label="Days left" value={`${pool.daysLeft} days`} suffix={`of ${pool.cycleDays}`} className="bg-bubble" />
               </dl>

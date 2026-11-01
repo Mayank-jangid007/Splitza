@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
 import { type MarketplacePool } from "@/components/marketplace-view";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
-import { HostPlanDetails, type Service } from "@/components/hosted-plans";
-import { DashboardView } from "@/components/dashboard/dashboard-view";
+import { type Service } from "@/components/hosted-plans";
 import { Marketplace } from "@/components/splitza/marketplace";
+import { PoolsSection } from "@/components/splitza/pools-section";
 import { EscrowFlow } from "@/components/escrow/escrow-flow";
+import { Home } from "@/components/splitza/home";
+import { PoolDetailsDialog } from "@/components/dashboard/pool-details-dialog";
 import { useAuth } from "@/context/AuthContext";
-import type { Pool, DashboardRoutes, EscrowStep } from "@/lib/dashboard/types";
+import type { Pool as SplitzaPool } from "@/lib/splitza";
+import type { DashboardRoutes, EscrowStep, Pool } from "@/lib/dashboard/types";
 import { Check, Copy, Lock, MessageCircle, Send } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Adapter: backend ApiPool / Service → UI Pool
+// Adapter: backend ApiPool → UI Pool
 // ---------------------------------------------------------------------------
 
 function getPlanLifespan(
@@ -46,7 +50,7 @@ const LOGO_MAP: Record<string, string> = {
   canva: "https://cdn.simpleicons.org/canva/00C4CC",
 };
 
-function apiPoolToUIPool(p: ApiPool, role: "host" | "member" = "host"): Pool {
+function apiPoolToUIPool(p: ApiPool): Pool {
   const poolName = p.name || p.platformName || "Platform Plan";
   const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
   const { daysLeft, totalDays, endsOn } = getPlanLifespan(p.planMonths, p.startDate, p.planDays);
@@ -55,7 +59,7 @@ function apiPoolToUIPool(p: ApiPool, role: "host" | "member" = "host"): Pool {
     name: poolName,
     logoUrl: logoKey ? LOGO_MAP[logoKey] : undefined,
     host: p.host || p.hostName || "Host",
-    role,
+    role: p.role === "HOST" ? "host" : "member",
     isPrivate: p.visibility === "PRIVATE",
     capacity: p.maxSeats,
     filledSeats: p.filledSeats ?? 0,
@@ -66,28 +70,29 @@ function apiPoolToUIPool(p: ApiPool, role: "host" | "member" = "host"): Pool {
     planMonths: p.planMonths,
     monthlyPlanCost: p.monthlyPlanCost,
     escrowStep: computeEscrowStep(p),
+    inviteUrl: p.inviteUrl,
   };
 }
 
-function serviceToUIPool(s: Service, id: string): Pool {
-  const { daysLeft, totalDays, endsOn } = getPlanLifespan(s.planMonths ?? 1, s.startDate, s.planDays);
-  const role: "host" | "member" = s.host === "You" ? "host" : "member";
+function apiPoolToSplitzaPool(p: ApiPool): SplitzaPool {
+  const poolName = p.name || p.platformName || "Platform Plan";
+  const { daysLeft, totalDays } = getPlanLifespan(p.planMonths, p.startDate, p.planDays);
   return {
-    id,
-    name: s.name,
-    logoUrl: s.logoUrl,
-    host: s.host,
-    role,
-    isPrivate: s.private,
-    capacity: s.capacity,
-    filledSeats: s.filled,
+    id: p.id,
+    name: poolName,
+    host: p.role === "HOST" ? "You" : p.host || p.hostName || "Host",
+    role: p.role === "HOST" ? "hosted" : "joined",
+    visibility: p.visibility === "PRIVATE" ? "private" : "public",
+    seats: p.maxSeats,
+    filled: p.filledSeats ?? 0,
     daysLeft,
     totalDays,
-    endsOn,
-    pricePerSeat: s.price,
-    planMonths: s.planMonths ?? 1,
-    monthlyPlanCost: s.monthlyPlanCost,
-    escrowStep: 1,
+    pricePerSeat: p.pricePerSeat,
+    durationMonths: p.planMonths ?? 1,
+    durationDays: p.planDays && p.planDays > 0 ? p.planDays : undefined,
+    stepsDone: computeEscrowStep(p),
+    members: [],
+    inviteCode: p.inviteUrl,
   };
 }
 
@@ -109,74 +114,58 @@ const ROUTES: DashboardRoutes = {
 // Page component
 // ---------------------------------------------------------------------------
 export default function Dashboard() {
-  const { user, logout } = useAuth();
-  const userName = user?.name?.split(" ")[0] ?? "You";
-  const userEmail = user?.email ?? "";
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+  const userName = user?.name?.split(" ")[0] ?? "there";
+  const userEmail = user?.email ?? "you@splitza.app";
 
   const [isSharing, setIsSharing] = useState(false);
   const [isBrowsing, setIsBrowsing] = useState(false);
   const [joiningPool, setJoiningPool] = useState<MarketplacePool | null>(null);
-  const [myServices, setMyServices] = useState<Service[]>([]);
-  const [activeService, setActiveService] = useState<Service | null>(null);
   const [activeShareService, setActiveShareService] = useState<Service | null>(null);
   const [copied, setCopied] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [pools, setPools] = useState<ApiPool[]>([]);
+  const [poolsLoading, setPoolsLoading] = useState(true);
+  const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
 
-  const fetchPools = async () => {
+  const fetchPools = useCallback(async () => {
     try {
       const myRes = await poolsApi.getMyPools();
-      if (myRes.ok) {
-        const mapPool = (p: ApiPool): Service => {
-          const poolName = p.name || p.platformName || "Platform Plan";
-          const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
-          return {
-            name: poolName,
-            // p.role is "HOST" | "MEMBER" from backend
-            // backend already sets host = "You" for HOST, actual name for MEMBER
-            host: p.role === "HOST" ? "You" : (p.host || p.hostName || "Unknown host"),
-            price: p.pricePerSeat,
-            capacity: p.maxSeats,
-            filled: p.filledSeats || 0,
-            private: p.visibility === "PRIVATE",
-            brand: poolName.substring(0, 2).toUpperCase(),
-            logoUrl: logoKey ? LOGO_MAP[logoKey] : undefined,
-            accent: p.role === "HOST" ? "bg-violet-400" : "bg-emerald-400",
-            planMonths: p.planMonths,
-            planDays: p.planDays,
-            monthlyPlanCost: p.monthlyPlanCost,
-            startDate: p.startDate,
-          };
-        };
-        setMyServices(myRes.data.map(mapPool));
-      }
+      if (myRes.ok) setPools(myRes.data);
     } catch (e) {
       console.error("Failed to load plans from backend", e);
+    } finally {
+      setPoolsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPools();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/landing");
+      return;
+    }
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchPools();
+    }
+  }, [loading, user, router, fetchPools]);
+
   const handleLaunch = async (details: LaunchPlanDetails) => {
-    const upi = details.hostUpiId?.trim() ?? ""
+    const upi = details.hostUpiId?.trim() ?? "";
     if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) {
-      throw new Error(`Invalid UPI ID "${upi || "(empty)"}". Use a format like yourname@okaxis.`)
+      throw new Error(`Invalid UPI ID "${upi || "(empty)"}". Use a format like yourname@okaxis.`);
     }
 
-    setIsCreating(true);
-    const seats = details.limit + 1
-    const monthlyPrice = details.monthlyPrice ?? details.price * Math.max(1, details.limit)
-    // If host specified days directly, use that; otherwise convert months → days
-    const planDays = details.planDays ?? (details.planMonths ?? 1) * 30
-    const planMonths = Math.max(1, Math.ceil(planDays / 30))
-    // ₹monthly ÷ 30 × days  (then backend splits by seats)
-    const totalPlanCostINR = Math.max(1, Math.round((monthlyPrice / 30) * planDays))
-    const pricePerSeat = Math.max(1, Math.round(totalPlanCostINR / seats))
+    const seats = details.limit + 1;
+    const monthlyPrice = details.monthlyPrice ?? details.price * Math.max(1, details.limit);
+    const planDays = details.planDays ?? (details.planMonths ?? 1) * 30;
+    const planMonths = Math.max(1, Math.ceil(planDays / 30));
+    const totalPlanCostINR = Math.max(1, Math.round((monthlyPrice / 30) * planDays));
+    const pricePerSeat = Math.max(1, Math.round(totalPlanCostINR / seats));
 
+    let created: Awaited<ReturnType<typeof poolsApi.create>>;
     try {
-      await poolsApi.create({
+      created = await poolsApi.create({
         serviceType: "CUSTOM",
         customName: details.name,
         totalPlanCostINR,
@@ -188,13 +177,15 @@ export default function Dashboard() {
         hostUpiId: upi,
         credentials: details.credentials,
       });
-    } catch (e: any) {
-      setIsCreating(false);
-      throw new Error(e?.message ?? "Failed to create pool. Please try again.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to create pool. Please try again.";
+      throw new Error(message);
     }
 
-    // Backend succeeded — update UI state
     const newService: Service = {
+      id: created.data?.poolId,
+      inviteUrl: created.data?.inviteUrl,
+      role: "host",
       name: details.name,
       host: "You",
       price: pricePerSeat,
@@ -209,10 +200,25 @@ export default function Dashboard() {
       monthlyPlanCost: monthlyPrice,
     };
 
-    setMyServices((prev) => [newService, ...prev]);
-    setIsCreating(false);
+    await fetchPools();
     setIsSharing(false);
     setActiveShareService(newService);
+  };
+
+  const handleUpdateVisibility = async (pool: Pool, isPublic: boolean) => {
+    await poolsApi.updateVisibility(pool.id, isPublic ? "PUBLIC" : "PRIVATE");
+    await fetchPools();
+  };
+
+  const handleDeletePool = async (pool: Pool) => {
+    await poolsApi.remove(pool.id);
+    setSelectedPool(null);
+    await fetchPools();
+  };
+
+  const handleOpenPool = (pool: SplitzaPool) => {
+    const raw = pools.find((item) => item.id === pool.id);
+    if (raw) setSelectedPool(apiPoolToUIPool(raw));
   };
 
   const copyLink = () => {
@@ -221,58 +227,69 @@ export default function Dashboard() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Convert Service[] → Pool[] for the new UI
-  const uiPools: Pool[] = myServices.map((s, i) => serviceToUIPool(s, `pool-${i}-${s.name}`));
-
-  // Full-screen overlay views
   if (isSharing) {
     return <SharePage dark={false} onBack={() => setIsSharing(false)} onLaunch={handleLaunch} />;
   }
 
-  if (activeService) {
-    return (
-      <HostPlanDetails
-        service={activeService}
-        dark={false}
-        onBack={() => setActiveService(null)}
-        onShare={() => {
-          setActiveService(null);
-          setIsSharing(true);
-        }}
-      />
-    );
-  }
-
   return (
-    <>
-      <DashboardView
-        pools={uiPools}
+    <div className="min-h-screen font-neo-body">
+      <Home
         userName={userName}
-        routes={{
-          ...ROUTES,
-          marketplace: "#marketplace",
-          createPlan: "#create",
-          sharePlan: "#create",
-        }}
-        onBrowseMarketplace={() => setIsBrowsing(true)}
-        onMyPools={() => setIsBrowsing(false)}
-        onCreatePlan={() => setIsSharing(true)}
-        onSharePlan={() => setIsSharing(true)}
+        email={userEmail}
+        view={isBrowsing ? "market" : "pools"}
+        onView={(view) => setIsBrowsing(view === "market")}
+        onShare={() => setIsSharing(true)}
+        onBrowse={() => setIsBrowsing(true)}
+        onWallet={() => {}}
         onLogout={logout}
-        onOpenWallet={() => {/* TODO: open wallet */}}
-        onOpenFeedback={() => {/* TODO: open feedback */}}
-        isBrowsing={isBrowsing}
-        marketplaceContent={isBrowsing ? (
-          <Marketplace
-            onCreatePlan={() => { setIsBrowsing(false); setIsSharing(true); }}
-            onJoin={(pool) => { setIsBrowsing(false); setJoiningPool(pool); }}
-          />
-        ) : undefined}
+      >
+        {isBrowsing ? (
+          <div className="mx-auto max-w-[1320px] px-4 pb-16 pt-10 sm:px-8 sm:pt-14 sm:pb-24">
+            <Marketplace
+              onCreatePlan={() => {
+                setIsBrowsing(false);
+                setIsSharing(true);
+              }}
+              onJoin={(pool) => {
+                setIsBrowsing(false);
+                setJoiningPool(pool);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="mx-auto max-w-[1320px] px-4 pb-16 sm:px-8 sm:pb-24">
+            {poolsLoading ? (
+              <div className="grid gap-6 lg:grid-cols-2" aria-busy="true" aria-label="Loading pools">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-64 animate-pulse rounded-3xl border-2 border-ink/40 bg-paper/70" />
+                ))}
+              </div>
+            ) : (
+              <PoolsSection
+                pools={pools.map(apiPoolToSplitzaPool)}
+                onOpenPool={handleOpenPool}
+                onShare={() => setIsSharing(true)}
+                onBrowse={() => setIsBrowsing(true)}
+              />
+            )}
+          </div>
+        )}
+      </Home>
+
+      <PoolDetailsDialog
+        pool={selectedPool}
+        routes={ROUTES}
+        onClose={() => setSelectedPool(null)}
+        onUpdateVisibility={handleUpdateVisibility}
+        onDelete={handleDeletePool}
       />
 
       <EscrowFlow
         pool={joiningPool}
-        onClose={() => { setJoiningPool(null); setIsBrowsing(true); }}
+        onClose={() => {
+          setJoiningPool(null);
+          setIsBrowsing(true);
+        }}
         onJoinComplete={fetchPools}
       />
 
@@ -341,6 +358,6 @@ export default function Dashboard() {
           </section>
         </div>
       )}
-    </>
+    </div>
   );
 }

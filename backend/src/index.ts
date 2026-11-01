@@ -142,35 +142,54 @@ app.use(errorHandler);
 // HTTP Server + WebSocket
 // ---------------------------------------------------------------------------
 const httpServer = http.createServer(app);
-initWebSocketServer(httpServer);
+const wss = initWebSocketServer(httpServer);
+
+// Handle bind errors (e.g. a second instance trying to use the same port)
+// gracefully instead of crashing with an unhandled 'error' event.
+const handleServerError = (err: NodeJS.ErrnoException): void => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `❌ Port ${PORT} is already in use. Is another Splitza API instance running?`
+    );
+  } else {
+    console.error("❌ HTTP server error:", err);
+  }
+  process.exit(1);
+};
+httpServer.on("error", handleServerError);
+wss.on("error", handleServerError);
 
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
 const startServer = async () => {
+  // Listen immediately so the API and /health are reachable while the
+  // database warms up (Neon/serverless DBs can take ~20s on cold start).
+  httpServer.listen(PORT, () => {
+    console.log(`\n🚀 Splitza API v3.0 running at http://localhost:${PORT}`);
+    console.log(`   Environment : ${process.env.NODE_ENV || "development"}`);
+    console.log(`   Frontend    : ${FRONTEND_URL}`);
+    console.log(`   WebSocket   : ws://localhost:${PORT}/ws`);
+    console.log(`   Health      : http://localhost:${PORT}/health\n`);
+  });
+
+  // Warm up the connection in the background. Prisma reconnects lazily on
+  // the next query, so the server stays usable even if this first attempt fails.
   try {
     await prisma.$connect();
     console.log("✅ PostgreSQL connected via Prisma");
-
-    // Start Google Pub/Sub subscriber for OTP relay
-    await startOtpSubscriber();
-
-    httpServer.listen(PORT, () => {
-      console.log(`\n🚀 Splitza API v3.0 running at http://localhost:${PORT}`);
-      console.log(`   Environment : ${process.env.NODE_ENV || "development"}`);
-      console.log(`   Frontend    : ${FRONTEND_URL}`);
-      console.log(`   WebSocket   : ws://localhost:${PORT}/ws`);
-      console.log(`   Health      : http://localhost:${PORT}/health\n`);
-    });
   } catch (err) {
     console.error("❌ Failed to connect to database:", err);
-    if (process.env.NODE_ENV !== "production") {
-      httpServer.listen(PORT, () => {
-        console.log(`🚀 Splitza API (offline mode) at http://localhost:${PORT}`);
-      });
-    } else {
+    if (process.env.NODE_ENV === "production") {
       process.exit(1);
     }
+  }
+
+  // Start Google Pub/Sub subscriber for OTP relay (non-fatal in dev).
+  try {
+    await startOtpSubscriber();
+  } catch (err) {
+    console.error("❌ Failed to start Pub/Sub subscriber:", err);
   }
 };
 
