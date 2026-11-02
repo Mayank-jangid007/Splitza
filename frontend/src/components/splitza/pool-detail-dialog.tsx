@@ -1,208 +1,519 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import {
-  CalendarClock, Check, Loader2, Receipt,
-  ShieldCheck, Star, Wallet, X,
+  CalendarClock,
+  Check,
+  Copy,
+  Crown,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Plus,
+  Receipt,
+  ShieldCheck,
+  User,
+  Wallet,
 } from 'lucide-react'
-import { ShimmerButton } from '@/components/ui/shimmer-button'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { formatINR, splitPrice, toneClass, type Pool } from '@/lib/pools'
-import { PoolOccupancy } from './pool-occupancy'
-import { PlanDetails } from './plan-details'
+import {
+  credentialsFor,
+  isValidUpi,
+  planDurationLabel,
+  rupee,
+  type MarketPool,
+} from '@/lib/splitza'
+import { poolsApi, type PoolCredentials } from '@/lib/api'
+import { Chip, Field, NeoButton, NeoDialog, PlatformLogo, inputClass } from './ui'
 
-type PoolDetailDialogProps = {
-  pool: Pool | null
-  seatsLeft: number
-  joined: boolean
-  onClose: () => void
-  onJoin?: (pool: Pool) => void
+type Step = 'review' | 'pay' | 'lock' | 'creds'
+const STEP_ORDER: Step[] = ['review', 'pay', 'lock', 'creds']
+const STEP_LABEL: Record<Step, string> = {
+  review: 'Review',
+  pay: 'Pay',
+  lock: 'Escrow',
+  creds: 'Access',
 }
 
-export function PoolDetailDialog({ pool, seatsLeft, joined, onClose, onJoin }: PoolDetailDialogProps) {
-  const [pending, setPending] = useState(false)
-  const closeRef = useRef<HTMLButtonElement>(null)
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-  useEffect(() => {
-    if (!pool) { setPending(false); return }
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    document.body.style.overflow = 'hidden'
-    setTimeout(() => closeRef.current?.focus(), 50)
-    return () => {
-      document.removeEventListener('keydown', handler)
-      document.body.style.overflow = ''
-    }
-  }, [pool, onClose])
-
-  const handleJoin = () => {
-    if (!pool) return
-    if (onJoin) {
-      setPending(true)
-      onJoin(pool)
-    }
-  }
-
+export function JoinFlow({
+  pool,
+  onClose,
+  onComplete,
+  onDone,
+}: {
+  pool: MarketPool | null
+  onClose: () => void
+  onComplete?: (pool: MarketPool) => void
+  onDone?: () => void
+}) {
+  const [locked, setLocked] = useState(false)
   return (
-    <AnimatePresence>
+    <NeoDialog
+      open={pool !== null}
+      onOpenChange={(o) => !o && onClose()}
+      title="Join pool"
+      eyebrow="Escrow flow"
+      accent="bg-sun"
+      maxWidth="max-w-lg"
+      locked={locked}
+    >
       {pool && (
-        <>
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-ink/50"
-            onClick={onClose}
-            aria-hidden="true"
-          />
-          <motion.div
-            key="dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label={pool.name}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="brut fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0 overflow-hidden rounded-[2rem] bg-cream p-0"
-          >
-            {/* Header */}
-            <div className={cn('flex shrink-0 items-center gap-4 border-b-[2.5px] border-ink p-6 pr-14', toneClass[pool.tone])}>
-              <span className="grid size-16 shrink-0 place-items-center rounded-full border-[2.5px] border-ink bg-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={pool.logo} alt="" className="size-9 object-contain" />
-              </span>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <span className="w-fit rounded-full border-2 border-ink bg-white px-2.5 py-0.5 text-xs font-bold">{pool.category}</span>
-                <h2 className="text-2xl leading-tight font-extrabold tracking-tight text-balance">{pool.name}</h2>
-                <p className="text-sm font-medium text-ink/70">Service: {pool.service}</p>
-              </div>
-              <button
-                ref={closeRef}
-                type="button"
-                aria-label="Close details"
-                onClick={onClose}
-                className="brut-sm absolute top-4 right-4 flex size-10 items-center justify-center rounded-full bg-white"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex min-h-0 flex-col gap-5 overflow-y-auto p-6">
-              {/* Host */}
-              <div className="brut-sm flex items-center gap-3 rounded-2xl bg-white p-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-full border-2 border-ink bg-lilac text-lg font-extrabold">
-                  {pool.host.charAt(0)}
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-xs font-bold tracking-wide text-ink/60 uppercase">Host</span>
-                  <span className="truncate font-bold">{pool.host}</span>
-                  <span className="font-mono text-xs text-ink/60">{pool.hostHandle}</span>
-                </div>
-                <div className="flex flex-col items-end gap-0.5 text-xs font-semibold">
-                  <span className="flex items-center gap-1">
-                    <Star className="size-3.5 fill-sun stroke-ink" aria-hidden="true" />
-                    {pool.hostRating.toFixed(1)}
-                  </span>
-                  <span className="text-ink/60">{pool.hostPools} pools hosted</span>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <dl className="grid grid-cols-3 gap-3">
-                <Stat icon={<Receipt className="size-4" />} label="Plan cost" value={formatINR(pool.totalCost)} suffix={pool.cycleDays >= 360 ? "per year" : pool.cycleDays === 30 ? "per month" : `${pool.cycleDays} days`} className="bg-white" />
-                <Stat icon={<Wallet className="size-4" />} label="Your split" value={formatINR(splitPrice(pool))} suffix={pool.cycleDays >= 360 ? "per year" : "per person"} className="bg-mint" />
-                <Stat icon={<CalendarClock className="size-4" />} label="Days left" value={`${pool.daysLeft} days`} suffix={`of ${pool.cycleDays}`} className="bg-bubble" />
-              </dl>
-
-              {/* Pro-rated note when pool is shorter than a full month */}
-              {pool.cycleDays < 30 && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border-2 border-dashed border-black-300/60 bg-[#fffbeb] px-3.5 py-2.5">
-                  <span className="rounded-full border-2 border-amber-400 bg-[#c9a8e8] px-2 py-0.5 font-mono text-[10px] font-black">Pro-rated</span>
-                  <span className="font-mono text-xs font-bold text-amber-800">
-                    ₹{pool.totalCost} ÷ 30 × {pool.cycleDays} days ÷ {pool.totalSeats} seats = ₹{splitPrice(pool)}
-                  </span>
-                </div>
-              )}
-
-              <PoolOccupancy pool={pool} seatsLeft={seatsLeft} joined={joined} />
-
-              {/* Perks */}
-              <ul className="flex flex-wrap gap-2">
-                {pool.perks.map((perk) => (
-                  <li key={perk} className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-white px-3 py-1 text-xs font-semibold">
-                    <Check className="size-3.5" aria-hidden="true" />
-                    {perk}
-                  </li>
-                ))}
-              </ul>
-
-              {/* Plan details */}
-              <PlanDetails
-                text={[pool.description, ...pool.rules.map((r, i) => `${i + 1}. ${r}`)].join('\n')}
-                setBy={pool.host.split(' ')[0]}
-              />
-
-              {/* CTA */}
-              <div className="flex flex-col gap-3">
-                {joined ? (
-                  <div role="status" className="brut flex items-center justify-center gap-2 rounded-full bg-mint px-6 py-4 text-base font-extrabold">
-                    <Check className="size-5" aria-hidden="true" />
-                    You are in this pool
-                  </div>
-                ) : seatsLeft === 0 ? (
-                  <button type="button" disabled className="rounded-full border-[2.5px] border-ink bg-muted px-6 py-4 text-base font-extrabold text-ink/60">
-                    Pool is full
-                  </button>
-                ) : (
-                  <ShimmerButton
-                    type="button"
-                    onClick={handleJoin}
-                    disabled={pending}
-                    shimmerColor="#f7c85a"
-                    background="#151515"
-                    className="h-14 w-full text-base font-extrabold shadow-[4px_4px_0_0_#f28fe0] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 disabled:opacity-80"
-                  >
-                    {pending ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                        Taking you to secure escrow
-                      </span>
-                    ) : (
-                      <span>Join Pool · {formatINR(splitPrice(pool))}/mo</span>
-                    )}
-                  </ShimmerButton>
-                )}
-                <p className="flex items-center justify-center gap-1.5 text-center text-xs font-medium text-ink/60">
-                  <ShieldCheck className="size-4" aria-hidden="true" />
-                  Escrow-held. UPI payouts. Every seat verified by bot.
-                </p>
-                {!joined && seatsLeft > 0 && (
-                  <p className="text-center text-xs font-medium text-ink/60">By joining you agree to the plan rules above.</p>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </>
+        <JoinBody
+          key={pool.id}
+          pool={pool}
+          onClose={onClose}
+          onComplete={onComplete}
+          onDone={onDone}
+          onLockChange={setLocked}
+        />
       )}
-    </AnimatePresence>
+    </NeoDialog>
   )
 }
 
-function Stat({ icon, label, value, suffix, className }: {
-  icon: React.ReactNode; label: string; value: string; suffix?: string; className?: string
+function JoinBody({
+  pool,
+  onClose,
+  onComplete,
+  onDone,
+  onLockChange,
+}: {
+  pool: MarketPool
+  onClose: () => void
+  onComplete?: (pool: MarketPool) => void
+  onDone?: () => void
+  onLockChange: (locked: boolean) => void
+}) {
+  const [step, setStep] = useState<Step>('review')
+  const [upi, setUpi] = useState('')
+  const [touched, setTouched] = useState(false)
+  const [reveal, setReveal] = useState(false)
+  const [copied, setCopied] = useState<'user' | 'pass' | null>(null)
+  const [joinedCreds, setJoinedCreds] = useState<PoolCredentials | null>(null)
+  const [alreadyMember, setAlreadyMember] = useState(false)
+  const fallbackCreds = credentialsFor(pool)
+  const creds = {
+    username: joinedCreds?.username ?? fallbackCreds.username,
+    password: joinedCreds?.password ?? fallbackCreds.password,
+  }
+  const days = pool.durationDays ?? pool.durationMonths * 30
+  const planCost = pool.pricePerSeat * pool.seats
+  const openSeats = Math.max(pool.seats - pool.filled, 0)
+  const upiOk = isValidUpi(upi)
+  const fullMonth = days === pool.durationMonths * 30
+
+  useEffect(() => {
+    onLockChange(step === 'lock')
+    return () => onLockChange(false)
+  }, [step, onLockChange])
+
+  useEffect(() => {
+    if (step !== 'lock') return
+    let cancelled = false
+    const t = setTimeout(async () => {
+      if (UUID_RE.test(pool.id)) {
+        try {
+          const myRes = await poolsApi.getMyPools()
+          const already = myRes.ok && myRes.data.some((p) => p.id === pool.id)
+          if (already) {
+            if (!cancelled) setAlreadyMember(true)
+            try {
+              const credsRes = await poolsApi.getCredentials(pool.id)
+              if (!cancelled && credsRes.ok && credsRes.data) setJoinedCreds(credsRes.data)
+            } catch {
+              // fallback credentials are shown
+            }
+          } else {
+            const res = await poolsApi.join(pool.id)
+            if (!cancelled && res.ok && res.data?.credentials) {
+              setJoinedCreds(res.data.credentials)
+            } else if (!cancelled) {
+              try {
+                const credsRes = await poolsApi.getCredentials(pool.id)
+                if (!cancelled && credsRes.ok && credsRes.data) setJoinedCreds(credsRes.data)
+              } catch {
+                // fallback credentials are shown
+              }
+            }
+          }
+        } catch {
+          // fallback credentials are shown
+        }
+      }
+      if (!cancelled) {
+        onComplete?.(pool)
+        setStep('creds')
+      }
+    }, 1200)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
+  const copy = async (kind: 'user' | 'pass') => {
+    try {
+      await navigator.clipboard.writeText(kind === 'user' ? creds.username : creds.password)
+    } catch {
+      // clipboard may be unavailable in sandboxed frames
+    }
+    setCopied(kind)
+    setTimeout(() => setCopied(null), 1400)
+  }
+
+  return (
+    <div className="space-y-6">
+      <ol className="grid grid-cols-4 gap-2" aria-label="Join progress">
+        {STEP_ORDER.map((s, i) => {
+          const idx = STEP_ORDER.indexOf(step)
+          return (
+            <li key={s} aria-current={i === idx ? 'step' : undefined} className="space-y-1.5">
+              <div
+                className={cn(
+                  'h-2.5 rounded-full border-2 border-ink',
+                  i < idx && 'bg-ink',
+                  i === idx && 'bg-sun',
+                  i > idx && 'bg-paper',
+                )}
+              />
+              <p className={cn('text-[10px] font-bold uppercase tracking-wider', i > idx && 'text-ink/45')}>
+                {i + 1}. {STEP_LABEL[s]}
+              </p>
+            </li>
+          )
+        })}
+      </ol>
+
+      {step === 'review' && (
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            <PlatformLogo name={pool.name} size={60} />
+            <div className="min-w-0">
+              <h3 className="font-display-tight text-xl font-black">{pool.name}</h3>
+              <p className="text-xs text-ink/70">Host · {pool.host}</p>
+              <div className="mt-2 flex gap-2">
+                <Chip tone="mint">{pool.trust.toFixed(1)} trust</Chip>
+                <Chip>{openSeats} seats open</Chip>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <StatCard
+              tone="bg-paper col-span-2 sm:col-span-1"
+              Icon={Receipt}
+              label="Plan cost"
+              value={inr(planCost)}
+              sub={planDurationLabel(pool)}
+            />
+            <StatCard
+              tone="bg-mint"
+              Icon={Wallet}
+              label="Your split"
+              value={inr(pool.pricePerSeat)}
+              sub="per person"
+            />
+            <StatCard
+              tone="bg-pop"
+              Icon={CalendarClock}
+              label="Days left"
+              value={`${days} days`}
+              sub={`of ${days}`}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border-2 border-dashed border-ink bg-sun/20 px-4 py-3">
+            <Chip tone="lav" className="border-sun py-1 text-[11px] normal-case tracking-normal">
+              Pro-rated
+            </Chip>
+            <span className="text-xs font-bold text-[#7a2f0a]">
+              ₹{planCost.toLocaleString('en-IN')} ÷ {days} days ÷ {pool.seats} seats ={' '}
+              {rupee(pool.pricePerSeat)}
+            </span>
+          </div>
+
+          <SeatsCard host={pool.host} seats={pool.seats} filled={pool.filled} open={openSeats} />
+
+          <section className="rounded-3xl border-2 border-ink bg-paper p-4 shadow-neo-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/70">Plan details</h4>
+              <Chip tone="lav" className="normal-case tracking-normal">
+                Set by {pool.host}
+              </Chip>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed">
+              A {planDurationLabel(pool)} shared plan hosted by {pool.host}
+              {pool.host.endsWith('.') ? '' : '.'} {openSeats}{' '}
+              {openSeats === 1 ? 'seat' : 'seats'} available.
+            </p>
+            <ol className="mt-3 space-y-2 text-sm">
+              {PLAN_RULES.map((rule, i) => (
+                <li key={rule} className="flex items-center gap-2.5">
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full border-2 border-ink bg-sun text-[11px] font-black">
+                    {i + 1}
+                  </span>
+                  {rule}
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <NeoButton className="w-full" size="lg" tone="ink" onClick={() => setStep('pay')}>
+            Join Pool · {inr(pool.pricePerSeat)}
+            {fullMonth && pool.durationMonths === 1 ? '/mo' : ''}
+          </NeoButton>
+          <div className="space-y-1 text-center text-[11px] text-ink/60">
+            <p className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5" strokeWidth={3} />
+              Escrow-held. UPI payouts. Every seat verified by bot.
+            </p>
+            <p>By joining you agree to the plan rules above.</p>
+          </div>
+        </div>
+      )}
+
+      {step === 'pay' && (
+        <form
+          className="space-y-5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setTouched(true)
+            if (upiOk) setStep('lock')
+          }}
+          noValidate
+        >
+          <div className="flex items-center justify-between rounded-2xl border-2 border-ink bg-sun p-4">
+            <span className="text-xs font-bold uppercase tracking-wider">Pay now</span>
+            <span className="font-display-tight text-3xl font-black">{rupee(pool.pricePerSeat)}</span>
+          </div>
+          <Field
+            label="Your UPI ID"
+            htmlFor="join-upi"
+            hint="Example: david@okbank"
+            error={touched && !upiOk ? 'Enter a valid UPI ID like name@bank to continue.' : undefined}
+          >
+            <input
+              id="join-upi"
+              value={upi}
+              onChange={(e) => setUpi(e.target.value)}
+              placeholder="name@bank"
+              autoComplete="off"
+              aria-invalid={touched && !upiOk}
+              className={inputClass}
+            />
+          </Field>
+          <div className="flex gap-3">
+            <NeoButton type="button" tone="paper" onClick={() => setStep('review')}>
+              Back
+            </NeoButton>
+            <NeoButton type="submit" className="flex-1">
+              Pay {rupee(pool.pricePerSeat)}
+            </NeoButton>
+          </div>
+        </form>
+      )}
+
+      {step === 'lock' && (
+        <div className="space-y-5 py-4 text-center" role="status" aria-live="polite">
+          <div className="relative mx-auto grid size-24 place-items-center">
+            <span className="animate-pulse-ring absolute inset-0 rounded-full border-2 border-ink bg-mint/60" />
+            <span className="relative grid size-20 place-items-center rounded-full border-2 border-ink bg-sun shadow-neo">
+              <Lock className="size-8" strokeWidth={2.5} />
+            </span>
+          </div>
+          <div>
+            <h3 className="font-display-tight text-2xl font-black">Locking your payment</h3>
+            <p className="mx-auto mt-2 max-w-xs text-sm text-ink/75">
+              Please wait and don&apos;t close this page. We&apos;re moving {rupee(pool.pricePerSeat)} into escrow.
+            </p>
+          </div>
+          <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+            <Loader2 className="size-4 animate-spin" strokeWidth={3} /> Verifying payment
+          </p>
+        </div>
+      )}
+
+      {step === 'creds' && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border-2 border-ink bg-mint p-4">
+            <p className="font-display-tight text-xl font-black">
+              {alreadyMember ? 'Already a member' : 'Payment locked'}
+            </p>
+            <p className="mt-1 text-xs">
+              {alreadyMember
+                ? `You already have a seat in ${pool.name}. Here are your login details.`
+                : `Verified. Here are your login details for ${pool.name}.`}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <CredRow
+              label="Username"
+              value={creds.username}
+              copied={copied === 'user'}
+              onCopy={() => copy('user')}
+            />
+            <CredRow
+              label="Password"
+              value={reveal ? creds.password : '•'.repeat(creds.password.length)}
+              copied={copied === 'pass'}
+              onCopy={() => copy('pass')}
+              extra={
+                <button
+                  type="button"
+                  onClick={() => setReveal((v) => !v)}
+                  aria-label={reveal ? 'Hide password' : 'Show password'}
+                  className="neo-press grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink bg-paper shadow-neo-sm outline-none focus-visible:ring-4 focus-visible:ring-ink/30"
+                >
+                  {reveal ? <EyeOff className="size-4" strokeWidth={3} /> : <Eye className="size-4" strokeWidth={3} />}
+                </button>
+              }
+            />
+          </div>
+          <NeoButton
+            className="w-full"
+            size="lg"
+            tone="ink"
+            onClick={() => {
+              onDone?.()
+              onClose()
+            }}
+          >
+            Go to my pools
+          </NeoButton>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const PLAN_RULES = ['Pay on time each billing cycle.', 'Do not share your credentials outside the pool.']
+
+const inr = (n: number) => `INR ${n.toLocaleString('en-IN')}`
+
+function StatCard({
+  tone,
+  Icon,
+  label,
+  value,
+  sub,
+}: {
+  tone: string
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  label: string
+  value: string
+  sub: string
 }) {
   return (
-    <div className={cn('brut-sm flex flex-col gap-2 rounded-2xl p-3.5', className)}>
-      <dt className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-ink/70 uppercase">{icon}{label}</dt>
-      <dd className="font-mono text-lg leading-none font-bold">
-        {value}
-        {suffix && <span className="mt-1.5 block font-sans text-xs font-semibold text-ink/60">{suffix}</span>}
-      </dd>
+    <div className={cn('min-w-0 rounded-2xl border-2 border-ink p-3 shadow-neo-sm', tone)}>
+      <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
+        <Icon className="size-3.5 shrink-0" strokeWidth={2.5} />
+        <span className="truncate">{label}</span>
+      </p>
+      <p className="mt-2 truncate font-display-tight text-base font-black">{value}</p>
+      <p className="mt-0.5 truncate text-[11px] text-ink/60">{sub}</p>
+    </div>
+  )
+}
+
+function SeatsCard({
+  host,
+  seats,
+  filled,
+  open,
+}: {
+  host: string
+  seats: number
+  filled: number
+  open: number
+}) {
+  return (
+    <section className="rounded-3xl border-2 border-ink bg-paper p-4 shadow-neo-sm">
+      <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/70">Seats available</h4>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <p className="font-display-tight text-3xl font-black">
+          {open} <span className="text-base font-bold text-ink/60">of {seats} left</span>
+        </p>
+        <Chip tone="sun" className="py-1 text-xs normal-case tracking-normal">
+          {open} {open === 1 ? 'seat' : 'seats'} open
+        </Chip>
+      </div>
+      <ul className="mt-4 grid grid-cols-4 gap-y-4">
+        {Array.from({ length: seats }, (_, i) => {
+          const kind = i === 0 ? 'host' : i < filled ? 'taken' : 'open'
+          return (
+            <li key={i} className="flex min-w-0 flex-col items-center gap-1.5">
+              {kind === 'host' && (
+                <span className="relative">
+                  <span className="grid size-12 place-items-center rounded-full border-2 border-ink bg-sun font-display text-base font-black">
+                    {host.charAt(0).toLowerCase()}
+                  </span>
+                  <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full border-2 border-ink bg-paper">
+                    <Crown className="size-3" strokeWidth={2.5} />
+                  </span>
+                </span>
+              )}
+              {kind === 'taken' && (
+                <span className="grid size-12 place-items-center rounded-full border-2 border-ink bg-lav-soft">
+                  <User className="size-5" strokeWidth={2.5} />
+                </span>
+              )}
+              {kind === 'open' && (
+                <span className="grid size-12 place-items-center rounded-full border-2 border-dashed border-ink/60 bg-cream text-ink/60">
+                  <Plus className="size-4" strokeWidth={2.5} />
+                </span>
+              )}
+              <span
+                className={cn(
+                  'max-w-full truncate text-[11px] font-bold',
+                  kind === 'open' ? 'text-ink/45' : 'text-ink',
+                )}
+              >
+                {kind === 'host' ? host : kind === 'taken' ? 'Joined' : 'Open'}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+function CredRow({
+  label,
+  value,
+  onCopy,
+  copied,
+  extra,
+}: {
+  label: string
+  value: string
+  onCopy: () => void
+  copied: boolean
+  extra?: React.ReactNode
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em]">{label}</p>
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate rounded-xl border-2 border-ink bg-paper px-4 py-3 text-sm font-bold shadow-neo-sm">
+          {value}
+        </p>
+        {extra}
+        <button
+          type="button"
+          onClick={onCopy}
+          aria-label={`Copy ${label.toLowerCase()}`}
+          className={cn(
+            'neo-press grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink shadow-neo-sm outline-none focus-visible:ring-4 focus-visible:ring-ink/30',
+            copied ? 'bg-mint' : 'bg-sun',
+          )}
+        >
+          {copied ? <Check className="size-4" strokeWidth={4} /> : <Copy className="size-4" strokeWidth={3} />}
+        </button>
+      </div>
     </div>
   )
 }

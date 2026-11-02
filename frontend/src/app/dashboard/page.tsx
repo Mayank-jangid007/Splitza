@@ -3,18 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SharePage, type LaunchPlanDetails } from "@/components/share-page";
-import { type MarketplacePool } from "@/components/marketplace-view";
 import { poolsApi, type Pool as ApiPool } from "@/lib/api";
-import { type Service } from "@/components/hosted-plans";
 import { Marketplace } from "@/components/splitza/marketplace";
 import { PoolsSection } from "@/components/splitza/pools-section";
-import { EscrowFlow } from "@/components/escrow/escrow-flow";
 import { Home } from "@/components/splitza/home";
 import { PoolDetailsDialog } from "@/components/dashboard/pool-details-dialog";
 import { useAuth } from "@/context/AuthContext";
 import type { Pool as SplitzaPool } from "@/lib/splitza";
 import type { DashboardRoutes, EscrowStep, Pool } from "@/lib/dashboard/types";
-import { Check, Copy, Lock, MessageCircle, Send } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Adapter: backend ApiPool → UI Pool
@@ -121,9 +117,6 @@ export default function Dashboard() {
 
   const [isSharing, setIsSharing] = useState(false);
   const [isBrowsing, setIsBrowsing] = useState(false);
-  const [joiningPool, setJoiningPool] = useState<MarketplacePool | null>(null);
-  const [activeShareService, setActiveShareService] = useState<Service | null>(null);
-  const [copied, setCopied] = useState(false);
   const [pools, setPools] = useState<ApiPool[]>([]);
   const [poolsLoading, setPoolsLoading] = useState(true);
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
@@ -182,27 +175,16 @@ export default function Dashboard() {
       throw new Error(message);
     }
 
-    const newService: Service = {
-      id: created.data?.poolId,
-      inviteUrl: created.data?.inviteUrl,
-      role: "host",
-      name: details.name,
-      host: "You",
-      price: pricePerSeat,
-      capacity: seats,
-      filled: 1,
-      private: details.isPrivate,
-      brand: details.name.substring(0, 2).toUpperCase(),
-      logoUrl: details.logoUrl,
-      accent: details.isPrivate ? "bg-violet-400" : "bg-emerald-400",
-      planMonths,
-      planDays,
-      monthlyPlanCost: monthlyPrice,
-    };
-
     await fetchPools();
-    setIsSharing(false);
-    setActiveShareService(newService);
+    return {
+      poolId: created.data?.poolId ?? "",
+      status: created.data?.status ?? "OPEN",
+      totalSeats: seats,
+      openSeats: Math.max(seats - 1, 0),
+      totalCost: totalPlanCostINR,
+      pricePerSeat: created.data?.pricePerSeat ?? pricePerSeat,
+      inviteUrl: created.data?.inviteUrl ?? null,
+    };
   };
 
   const handleUpdateVisibility = async (pool: Pool, isPublic: boolean) => {
@@ -221,14 +203,18 @@ export default function Dashboard() {
     if (raw) setSelectedPool(apiPoolToUIPool(raw));
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText("https://subsplit.in");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
   if (isSharing) {
-    return <SharePage dark={false} onBack={() => setIsSharing(false)} onLaunch={handleLaunch} />;
+    return (
+      <SharePage
+        dark={false}
+        onBack={() => {
+          void fetchPools();
+          setIsBrowsing(false);
+          setIsSharing(false);
+        }}
+        onLaunch={handleLaunch}
+      />
+    );
   }
 
   return (
@@ -250,10 +236,10 @@ export default function Dashboard() {
                 setIsBrowsing(false);
                 setIsSharing(true);
               }}
-              onJoin={(pool) => {
-                setIsBrowsing(false);
-                setJoiningPool(pool);
+              onJoin={() => {
+                void fetchPools();
               }}
+              onDone={() => setIsBrowsing(false)}
             />
           </div>
         ) : (
@@ -284,80 +270,6 @@ export default function Dashboard() {
         onDelete={handleDeletePool}
       />
 
-      <EscrowFlow
-        pool={joiningPool}
-        onClose={() => {
-          setJoiningPool(null);
-          setIsBrowsing(true);
-        }}
-        onJoinComplete={fetchPools}
-      />
-
-      {/* Private pool live popup — kept as-is from original */}
-      {activeShareService && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/75 px-4 py-6 backdrop-blur-md">
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="private-pool-title"
-            className="w-full max-w-xl rounded-[2rem] border-[3px] border-black bg-black p-6 text-white shadow-[10px_10px_0_#34d399] sm:p-8"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <span className="grid size-14 shrink-0 place-items-center rounded-none border-[3px] border-emerald-300 bg-emerald-300 text-black shadow-[4px_4px_0_#a78bfa]">
-                  <Lock size={24} strokeWidth={3} />
-                </span>
-                <div>
-                  <p className="font-mono text-[10px] font-black tracking-[.18em] text-emerald-300">PRIVATE CIRCLE MODE</p>
-                  <h2 id="private-pool-title" className="mt-2 font-mono text-2xl font-black uppercase leading-tight tracking-[-.06em] sm:text-3xl">
-                    Private Split Pool is Live!
-                  </h2>
-                </div>
-              </div>
-              <span className="hidden rounded-none border border-emerald-300/50 px-3 py-1 font-mono text-[9px] font-black tracking-widest text-emerald-300 sm:block">ACTIVE</span>
-            </div>
-
-            <div className="mt-8 flex flex-col gap-3 rounded-none border-2 border-white/20 bg-black p-3 sm:flex-row sm:items-center">
-              <code className="min-w-0 flex-1 break-all px-2 font-mono text-sm text-white">https://subsplit.in</code>
-              <button
-                onClick={copyLink}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-none border-2 border-emerald-300 bg-emerald-300 px-4 py-2.5 font-mono text-[10px] font-black text-black transition hover:bg-white hover:border-white"
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? "COPIED!" : "COPY LINK"}
-              </button>
-            </div>
-
-            <p className="mt-5 text-sm leading-6 text-white/70">
-              Your subscription is completely hidden from the public eye. Send this private portal link to your friends, family, or roommates. As soon as they click and authorize their monthly UPI AutoPay split, our escrow locker will seamlessly release their profile access codes and handle your monthly payouts automatically.
-            </p>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              <button
-                aria-label="Share on WhatsApp"
-                onClick={() => window.open("https://wa.me/?text=https%3A%2F%2Fsubsplit.in", "_blank", "noopener,noreferrer")}
-                className="inline-flex items-center justify-center gap-3 rounded-none border-2 border-emerald-300/70 bg-black px-4 py-3 font-mono text-[10px] font-black text-white transition hover:bg-emerald-300 hover:text-black"
-              >
-                <MessageCircle size={18} strokeWidth={2.5} /> WHATSAPP
-              </button>
-              <button
-                aria-label="Share on Telegram"
-                onClick={() => window.open("https://t.me/share/url?url=https%3A%2F%2Fsubsplit.in", "_blank", "noopener,noreferrer")}
-                className="inline-flex items-center justify-center gap-3 rounded-none border-2 border-amber-300/70 bg-black px-4 py-3 font-mono text-[10px] font-black text-white transition hover:bg-amber-300 hover:text-black"
-              >
-                <Send size={17} fill="currentColor" /> TELEGRAM
-              </button>
-            </div>
-
-            <button
-              onClick={() => setActiveShareService(null)}
-              className="mt-8 w-full rounded-none border-[3px] border-emerald-300 bg-emerald-300 px-5 py-4 font-mono text-[11px] font-black text-black shadow-[4px_4px_0_#a78bfa] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white hover:border-white"
-            >
-              GO TO MY LEDGER
-            </button>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

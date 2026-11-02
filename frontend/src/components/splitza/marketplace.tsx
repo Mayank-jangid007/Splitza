@@ -10,23 +10,22 @@ import { cn } from '@/lib/utils'
 import {
   CATEGORIES,
   SEED_MARKET,
-  detectPlatform,
   planDurationLabel,
   rupee,
   type Category,
   type MarketPool,
 } from '@/lib/splitza'
 import type { MarketplacePool } from '@/components/marketplace-view'
-import type { Pool as CardPool } from '@/lib/pools'
 import { poolsApi, type MarketplacePoolItem } from '@/lib/api'
 import { SeatDots } from './home-pool-card'
 import { Burst, Flower, Sparkle } from './stickers'
 import { Chip, NeoButton, PlatformLogo, inputClass } from './ui'
-import { PoolDetailDialog } from './pool-detail-dialog'
+import { JoinFlow } from './pool-detail-dialog'
 
 interface MarketplaceProps {
   onCreatePlan?: () => void
   onJoin?: (pool: MarketplacePool) => void
+  onDone?: () => void
 }
 
 type Filter = 'All' | Category
@@ -86,38 +85,27 @@ function toJoinable(pool: MarketPool): MarketplacePool {
   }
 }
 
-function marketToCardPool(pool: MarketPool): CardPool {
-  const info = detectPlatform(pool.name)
-  const cycleDays = pool.durationDays ?? pool.durationMonths * 30
-  return {
-    id: pool.id,
-    name: pool.name,
-    service: pool.name,
-    category: pool.category,
-    host: pool.host,
-    hostHandle: `@${pool.host.toLowerCase().replace(/\s+/g, '.')}`,
-    logo:
-      info?.logo ??
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(pool.name)}&background=random&size=64`,
-    totalCost: pool.pricePerSeat * pool.seats,
-    totalSeats: pool.seats,
-    seatsLeft: Math.max(pool.seats - pool.filled, 0),
-    daysLeft: cycleDays,
-    cycleDays,
-    tone: 'sun',
-    perks: [],
-    description: `A ${planDurationLabel(pool)} shared plan hosted by ${pool.host}. ${Math.max(pool.seats - pool.filled, 0)} seats available.`,
-    rules: ['Pay on time each billing cycle.', 'Do not share your credentials outside the pool.'],
-    hostRating: pool.trust,
-    hostPools: 1,
-  }
-}
-
-export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
+export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('All')
   const [selected, setSelected] = useState<MarketPool | null>(null)
   const [livePools, setLivePools] = useState<MarketPool[]>([])
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    let cancelled = false
+    poolsApi
+      .getMyPools()
+      .then((res) => {
+        if (!cancelled && res.ok) setJoinedIds(new Set(res.data.map((p) => p.id)))
+      })
+      .catch(() => {
+        // Non-fatal — join buttons stay available.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -287,6 +275,7 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
             {results.map((pool) => {
               const open = Math.max(pool.seats - pool.filled, 0)
               const full = open <= 0
+              const joined = joinedIds.has(pool.id)
               return (
                 <li
                   key={pool.id}
@@ -331,14 +320,29 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
                   </div>
 
                   <NeoButton
-                    tone={full ? 'paper' : 'sun'}
+                    tone={joined ? 'mint' : full ? 'paper' : 'sun'}
+                    disabled={joined || full}
                     onClick={() => setSelected(pool)}
-                    className="relative z-10 w-full"
-                    aria-label={`View details for ${pool.name}`}
+                    className={cn(
+                      'w-full',
+                      (joined || full) && 'disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none',
+                      !joined && !full && 'relative z-10',
+                    )}
+                    aria-label={
+                      joined
+                        ? `Already joined ${pool.name}`
+                        : full
+                          ? `${pool.name} is full`
+                          : `View details for ${pool.name}`
+                    }
                   >
-                    {full ? (
+                    {joined ? (
                       <>
-                        <ShieldCheck className="size-4" strokeWidth={3} /> View details
+                        <BadgeCheck className="size-4" strokeWidth={3} /> Joined
+                      </>
+                    ) : full ? (
+                      <>
+                        <ShieldCheck className="size-4" strokeWidth={3} /> Pool full
                       </>
                     ) : (
                       <>
@@ -353,15 +357,16 @@ export function Marketplace({ onCreatePlan, onJoin }: MarketplaceProps) {
         )}
       </section>
 
-      <PoolDetailDialog
-        pool={selected ? marketToCardPool(selected) : null}
-        seatsLeft={selected ? Math.max(selected.seats - selected.filled, 0) : 0}
-        joined={false}
+      <JoinFlow
+        pool={selected}
         onClose={() => setSelected(null)}
-        onJoin={() => {
-          const pool = selected
+        onComplete={(pool) => {
+          setJoinedIds((prev) => new Set(prev).add(pool.id))
+          onJoin?.(toJoinable(pool))
+        }}
+        onDone={() => {
           setSelected(null)
-          if (pool) onJoin?.(toJoinable(pool))
+          onDone?.()
         }}
       />
     </div>
