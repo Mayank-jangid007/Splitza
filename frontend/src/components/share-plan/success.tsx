@@ -35,9 +35,9 @@ export function Success({
   return (
     <section
       aria-labelledby="step-heading"
-      className="mx-auto grid max-w-5xl animate-rise items-center gap-10 py-6 lg:grid-cols-[1fr_380px] lg:gap-16"
+      className="mx-auto grid w-full max-w-5xl animate-rise items-center gap-10 py-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16"
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         <Illo
           src="/illustrations/launch.png"
           tint="bg-lilac"
