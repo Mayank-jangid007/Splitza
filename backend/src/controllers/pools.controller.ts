@@ -33,7 +33,7 @@ export async function handleCreatePool(
     const body = req.body as Record<string, unknown>;
 
     // ── Coerce & forward to service ───────────────────────────
-    const input = body as CreatePoolInput;
+    const input = body as unknown as CreatePoolInput;
 
     // hostId is injected by auth middleware — never trusted from body
     input.hostId = (req as any).user!.id;
@@ -80,7 +80,7 @@ export async function handleJoinPool(
   res: Response
 ): Promise<void> {
   try {
-    const { poolId } = req.params;
+    const poolId = String(req.params.poolId ?? "");
     const { inviteToken } = req.body as { inviteToken?: string };
 
     // userId is injected by auth middleware — never trusted from body
@@ -157,7 +157,7 @@ export async function handleGetPoolCredentials(
   res: Response
 ): Promise<void> {
   try {
-    const { poolId } = req.params;
+    const poolId = String(req.params.poolId ?? "");
     const userId = (req as any).user!.id;
 
     if (!poolId) {

@@ -69,7 +69,7 @@ export async function handleGetPrivatePool(
   res: Response
 ): Promise<void> {
   try {
-    const { token } = req.params;
+    const token = String(req.params.token ?? "");
 
     if (!token) {
       res.status(400).json({

@@ -9,23 +9,16 @@ import rateLimit from "express-rate-limit";
 import passport from "./services/googleOAuth";
 
 import authRoutes from "./routes/auth";
-import planRoutes from "./routes/plans";
-import slotRoutes from "./routes/slots";
-import paymentRoutes from "./routes/payments";
-import adminRoutes from "./routes/admin";
-import otpRoutes from "./routes/otp";
 import poolsRoutes from "./routes/pools";
 import marketplaceRoutes from "./routes/marketplace";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { prisma } from "./lib/prisma";
-import { initWebSocketServer } from "./services/websocket";
-import { startOtpSubscriber } from "./services/pubsub";
-import { closeBrowser } from "./services/bot";
 
 dotenv.config();
 
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = parseInt(process.env.PORT || "5000", 10);
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
@@ -45,9 +38,6 @@ app.use(cors({
 
 app.use(cookieParser());
 app.use(passport.initialize());
-
-// Raw body parser for Razorpay webhook signature verification
-app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -104,31 +94,16 @@ app.get("/health", async (_req, res) => {
 
 app.get("/api", (_req, res) => {
   res.json({
-    message: "Splitza API v3.0 — Phase 3 Active",
-    features: {
-      payments: "Razorpay UPI AutoPay",
-      verification: "Puppeteer Browser Bots",
-      otpRelay: "Google Pub/Sub + WebSocket",
-      escrow: "Razorpay Route",
-    },
+    message: "Splitza API",
     endpoints: {
       auth: "/api/auth/*",
-      plans: "/api/plans/*",
-      slots: "/api/slots/*",
-      payments: "/api/payments/*",
-      otp: "/api/otp/*",
-      admin: "/api/admin/*",
-      websocket: "ws://host/ws?token=<jwt>",
+      pools: "/api/pools/*",
+      marketplace: "/api/marketplace/*",
     },
   });
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/plans", planRoutes);
-app.use("/api/slots", slotRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/otp", otpRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/pools", poolsRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 
@@ -139,10 +114,9 @@ app.use(notFound);
 app.use(errorHandler);
 
 // ---------------------------------------------------------------------------
-// HTTP Server + WebSocket
+// HTTP Server
 // ---------------------------------------------------------------------------
 const httpServer = http.createServer(app);
-const wss = initWebSocketServer(httpServer);
 
 // Handle bind errors (e.g. a second instance trying to use the same port)
 // gracefully instead of crashing with an unhandled 'error' event.
@@ -157,7 +131,6 @@ const handleServerError = (err: NodeJS.ErrnoException): void => {
   process.exit(1);
 };
 httpServer.on("error", handleServerError);
-wss.on("error", handleServerError);
 
 // ---------------------------------------------------------------------------
 // Start
@@ -169,7 +142,6 @@ const startServer = async () => {
     console.log(`\n🚀 Splitza API v3.0 running at http://localhost:${PORT}`);
     console.log(`   Environment : ${process.env.NODE_ENV || "development"}`);
     console.log(`   Frontend    : ${FRONTEND_URL}`);
-    console.log(`   WebSocket   : ws://localhost:${PORT}/ws`);
     console.log(`   Health      : http://localhost:${PORT}/health\n`);
   });
 
@@ -185,12 +157,6 @@ const startServer = async () => {
     }
   }
 
-  // Start Google Pub/Sub subscriber for OTP relay (non-fatal in dev).
-  try {
-    await startOtpSubscriber();
-  } catch (err) {
-    console.error("❌ Failed to start Pub/Sub subscriber:", err);
-  }
 };
 
 startServer();
@@ -200,7 +166,6 @@ startServer();
 // ---------------------------------------------------------------------------
 const shutdown = async () => {
   console.log("\n🛑 Shutting down gracefully...");
-  await closeBrowser();
   await prisma.$disconnect();
   httpServer.close(() => process.exit(0));
 };

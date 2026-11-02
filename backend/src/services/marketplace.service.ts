@@ -72,7 +72,7 @@ export interface MarketplaceResult {
 // ─────────────────────────────────────────────
 
 /** Statuses that indicate a pool is accepting new members */
-const JOINABLE_STATUSES = ["OPEN"] as const;
+const JOINABLE_STATUSES: "OPEN"[] = ["OPEN"];
 
 const DEFAULT_PAGE      = 1;
 const DEFAULT_PAGE_SIZE = 12;

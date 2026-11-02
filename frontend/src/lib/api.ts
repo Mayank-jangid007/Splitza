@@ -3,7 +3,7 @@
  * Handles all HTTP requests to the Express backend with JWT interceptors.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // ---------------------------------------------------------------------------
 // Token management (localStorage in browser)

@@ -1,17 +1,19 @@
 import type { NextConfig } from "next";
 
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"
-).replace(/\/api\/?$/, "");
+const BACKEND_URL = (
+  process.env.BACKEND_URL || "http://localhost:5001"
+)
+  .replace(/\/+$/, "")
+  .replace(/\/api$/, "");
 
 const nextConfig: NextConfig = {
-  // Proxy backend routes (e.g. the Google OAuth callback) through the
-  // frontend origin so Google can use http://localhost:5000 as redirect URI.
+  // Proxy backend routes through the frontend origin so browser requests are
+  // same-origin and refresh cookies work without cross-site cookie issues.
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${API_BASE}/api/:path*`,
+        destination: `${BACKEND_URL}/api/:path*`,
       },
     ];
   },

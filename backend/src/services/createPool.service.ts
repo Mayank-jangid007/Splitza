@@ -90,10 +90,10 @@ export interface CreatePoolResult {
 // ─────────────────────────────────────────────
 
 const PLATFORM_FEE_PERCENT = new Decimal(5); // 5 %
-const INVITE_TOKEN_BYTES   = 32;             // 256-bit token → 64 hex chars
-const MAX_CUSTOM_SEATS     = 12;
-const MAX_PLAN_MONTHS      = 12;
-const MIN_PRICE_INR        = 1;
+const INVITE_TOKEN_BYTES = 32;             // 256-bit token → 64 hex chars
+const MAX_CUSTOM_SEATS = 12;
+const MAX_PLAN_MONTHS = 12;
+const MIN_PRICE_INR = 1;
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -167,7 +167,7 @@ async function fetchAndValidatePlatformConfig(
     throw new PoolServiceError(
       "SEAT_COUNT_TAMPERED",
       `${raw.name} allows exactly ${raw.maxSeats} seats. ` +
-        `Client submitted ${input.claimedMaxSeats}.`
+      `Client submitted ${input.claimedMaxSeats}.`
     );
   }
 
@@ -176,7 +176,7 @@ async function fetchAndValidatePlatformConfig(
     throw new PoolServiceError(
       "INVALID_BILLING_CYCLE",
       `${raw.name} does not allow a ${input.claimedPlanMonths}-month plan. ` +
-        `Allowed: [${raw.allowedCycles.join(", ")}].`
+      `Allowed: [${raw.allowedCycles.join(", ")}].`
     );
   }
 
@@ -184,13 +184,13 @@ async function fetchAndValidatePlatformConfig(
   const expectedTotal = officialPricePerMonth
     .times(input.claimedPlanMonths)
     .toDecimalPlaces(2);
-  const claimedTotal  = toDecimal(input.claimedTotalCostINR);
+  const claimedTotal = toDecimal(input.claimedTotalCostINR);
 
   if (!claimedTotal.equals(expectedTotal)) {
     throw new PoolServiceError(
       "PRICE_TAMPERED",
       `${raw.name} total for ${input.claimedPlanMonths} month(s) must be ` +
-        `₹${expectedTotal.toFixed(2)}. Client submitted ₹${claimedTotal.toFixed(2)}.`
+      `₹${expectedTotal.toFixed(2)}. Client submitted ₹${claimedTotal.toFixed(2)}.`
     );
   }
 
@@ -259,28 +259,28 @@ export async function createPool(
   validateBaseInput(input);
 
   // ── 2. Resolve plan parameters ───────────────────────────────
-  let maxSeats:     number;
-  let planMonths:   number;
+  let maxSeats: number;
+  let planMonths: number;
   let totalCostINR: Decimal;
-  let platformConfigId: string | null  = null;
-  let customName:        string | null = null;
+  let platformConfigId: string | null = null;
+  let customName: string | null = null;
   let isCustom = false;
 
   if (input.serviceType === "PRE_STORED") {
     const { lockedMaxSeats, lockedPricePerMonth, lockedPlanMonths, config } =
       await fetchAndValidatePlatformConfig(input);
 
-    maxSeats         = lockedMaxSeats;
-    planMonths       = lockedPlanMonths;
-    totalCostINR     = lockedPricePerMonth.times(lockedPlanMonths).toDecimalPlaces(2);
+    maxSeats = lockedMaxSeats;
+    planMonths = lockedPlanMonths;
+    totalCostINR = lockedPricePerMonth.times(lockedPlanMonths).toDecimalPlaces(2);
     platformConfigId = config.id;
   } else {
     validateCustomInput(input);
-    maxSeats     = input.totalSeats;
-    planMonths   = input.planMonths;
+    maxSeats = input.totalSeats;
+    planMonths = input.planMonths;
     totalCostINR = toDecimal(input.totalPlanCostINR);
-    customName   = input.customName.trim();
-    isCustom     = true;
+    customName = input.customName.trim();
+    isCustom = true;
   }
 
   const planDays: number | null =
@@ -321,15 +321,15 @@ export async function createPool(
       // 6a. Create the SplitPool
       const pool = await tx.splitPool.create({
         data: {
-          hostId:             input.hostId,
+          hostId: input.hostId,
           platformConfigId,
           customName,
           customPricePerMonth: isCustom
             ? toDecimal(
-                input.serviceType === "CUSTOM" && input.monthlyPlanCost
-                  ? input.monthlyPlanCost
-                  : Number(totalCostINR.dividedBy(planMonths)),
-              )
+              input.serviceType === "CUSTOM" && input.monthlyPlanCost
+                ? input.monthlyPlanCost
+                : Number(totalCostINR.dividedBy(planMonths)),
+            )
             : null,
           customMaxSeats: isCustom ? maxSeats : null,
           isCustom,
@@ -337,23 +337,23 @@ export async function createPool(
           pricePerSeat,
           planMonths,
           planDays,
-          currency:           "INR",
-          visibility:         input.visibility,
-          status:             "OPEN",
-          hostUpiId:          input.hostUpiId.trim(),
+          currency: "INR",
+          visibility: input.visibility,
+          status: "OPEN",
+          hostUpiId: input.hostUpiId.trim(),
           platformFeePercent: PLATFORM_FEE_PERCENT,
-          autoRenew:          false,
+          autoRenew: false,
         },
       });
 
       // 6b. Add host as first membership (seat 1 of N, role = HOST)
       const membership = await tx.membership.create({
         data: {
-          userId:          input.hostId,
-          poolId:          pool.id,
-          role:            "HOST",
-          status:          "ACTIVE",  // host is active immediately
-          priceAtJoin:     pricePerSeat,
+          userId: input.hostId,
+          poolId: pool.id,
+          role: "HOST",
+          status: "ACTIVE",  // host is active immediately
+          priceAtJoin: pricePerSeat,
           planMonthsAtJoin: planMonths,
         },
       });
@@ -362,11 +362,11 @@ export async function createPool(
       if (inviteToken) {
         await tx.inviteLink.create({
           data: {
-            poolId:      pool.id,
-            token:       inviteToken,
+            poolId: pool.id,
+            token: inviteToken,
             createdById: input.hostId,
-            maxUses:     maxSeats - 1, // one slot per remaining member
-            expiresAt:   new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            maxUses: maxSeats - 1, // one slot per remaining member
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
           },
         });
       }
@@ -382,20 +382,20 @@ export async function createPool(
     },
     {
       isolationLevel: "Serializable", // prevent race on seat count
-      timeout:        8000,           // 8-second transaction timeout
+      timeout: 8000,           // 8-second transaction timeout
     }
   );
 
   // ── 7. Audit log (outside transaction — non-critical) ────────
   await prisma.auditLog.create({
     data: {
-      actorId:  input.hostId,
-      action:   "POOL_CREATED",
-      entity:   "SplitPool",
+      actorId: input.hostId,
+      action: "POOL_CREATED",
+      entity: "SplitPool",
       entityId: createdPool.id,
       metadata: {
-        serviceType:  input.serviceType,
-        visibility:   input.visibility,
+        serviceType: input.serviceType,
+        visibility: input.visibility,
         maxSeats,
         planMonths,
         pricePerSeat: pricePerSeat.toFixed(2),
@@ -408,9 +408,9 @@ export async function createPool(
 
   // ── 8. Return result ─────────────────────────────────────────
   return {
-    pool:           createdPool   as unknown as ISplitPool,
+    pool: createdPool as unknown as ISplitPool,
     hostMembership: hostMembership as unknown as IMembership,
-    credential:     credential    as unknown as IPoolCredential | null,
+    credential: credential as unknown as IPoolCredential | null,
     inviteToken,    // ONLY returned here — never stored in plaintext again
   };
 }

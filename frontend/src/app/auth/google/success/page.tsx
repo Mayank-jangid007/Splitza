@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { setToken } from "@/lib/api"
 
@@ -10,7 +10,7 @@ import { setToken } from "@/lib/api"
  *   ?token=<accessToken>&user=<JSON-encoded user>
  * We store the token, update AuthContext, then go to dashboard.
  */
-export default function GoogleSuccessPage() {
+function GoogleSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const handled = useRef(false)
@@ -51,5 +51,22 @@ export default function GoogleSuccessPage() {
         <p className="text-sm font-semibold text-foreground/60">Signing you in with Google…</p>
       </div>
     </div>
+  )
+}
+
+export default function GoogleSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-4">
+            <div className="size-12 animate-spin rounded-full border-4 border-foreground/20 border-t-foreground" />
+            <p className="text-sm font-semibold text-foreground/60">Signing you in with Google…</p>
+          </div>
+        </div>
+      }
+    >
+      <GoogleSuccessContent />
+    </Suspense>
   )
 }

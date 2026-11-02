@@ -10,7 +10,7 @@ import { User } from "@prisma/client";
 
 // Called after passport successfully authenticates via Google
 export const googleCallback = (req: Request, res: Response): void => {
-  const user = req.user as User;
+  const user = req.user as unknown as User;
 
   if (!user) {
     res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=google_failed`);

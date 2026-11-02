@@ -2,16 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
-}
+export type AuthRequest = Request;
 
 export const authenticate = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -46,7 +40,7 @@ export const authenticate = async (
 };
 
 export const requireRole = (...roles: string[]) =>
-  (req: AuthRequest, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user || !roles.includes(req.user.role)) {
       res.status(403).json({ success: false, message: "Insufficient permissions" });
       return;
