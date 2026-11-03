@@ -94,87 +94,10 @@ export type MarketPool = {
   category: Category
 }
 
-export const CURRENT_USER = 'David'
-export const CURRENT_EMAIL = 'david@splitza.app'
-
-export const SEED_POOLS: Pool[] = [
-  {
-    id: 'p1',
-    name: 'Netflix Premium',
-    host: CURRENT_USER,
-    role: 'hosted',
-    visibility: 'public',
-    seats: 4,
-    filled: 2,
-    daysLeft: 21,
-    totalDays: 30,
-    pricePerSeat: 160,
-    durationMonths: 1,
-    stepsDone: 2,
-    members: [CURRENT_USER, 'Aanya R.', 'Kabir S.'],
-  },
-  {
-    id: 'p2',
-    name: 'Spotify Family',
-    host: 'Meera K.',
-    role: 'joined',
-    visibility: 'public',
-    seats: 6,
-    filled: 5,
-    daysLeft: 74,
-    totalDays: 90,
-    pricePerSeat: 210,
-    durationMonths: 3,
-    stepsDone: 3,
-    members: ['Meera K.', 'Rohan P.', CURRENT_USER, 'Ishita D.', 'Neel A.'],
-  },
-  {
-    id: 'p3',
-    name: 'Notion Team',
-    host: CURRENT_USER,
-    role: 'hosted',
-    visibility: 'private',
-    seats: 5,
-    filled: 1,
-    daysLeft: 168,
-    totalDays: 180,
-    pricePerSeat: 390,
-    durationMonths: 6,
-    stepsDone: 1,
-    members: [CURRENT_USER, 'Tanvi M.'],
-    inviteCode: 'ntn-7f3k2a',
-  },
-  {
-    id: 'p4',
-    name: 'ChatGPT Plus',
-    host: 'Arjun V.',
-    role: 'joined',
-    visibility: 'public',
-    seats: 3,
-    filled: 3,
-    daysLeft: 4,
-    totalDays: 30,
-    pricePerSeat: 700,
-    durationMonths: 1,
-    stepsDone: 4,
-    members: ['Arjun V.', CURRENT_USER, 'Zoya F.'],
-  },
-]
-
-export const SEED_MARKET: MarketPool[] = [
-  { id: 'm1', name: 'Disney+ Hotstar Premium', host: 'Rhea N.', trust: 4.9, pricePerSeat: 125, durationMonths: 1, seats: 4, filled: 2, category: 'Entertainment' },
-  { id: 'm2', name: 'YouTube Premium Family', host: 'Dev S.', trust: 4.7, pricePerSeat: 55, durationMonths: 1, seats: 5, filled: 3, category: 'Entertainment' },
-  { id: 'm3', name: 'Apple Music Family', host: 'Sana B.', trust: 4.8, pricePerSeat: 70, durationMonths: 1, seats: 6, filled: 4, category: 'Music' },
-  { id: 'm4', name: 'Spotify Duo', host: 'Kunal T.', trust: 4.6, pricePerSeat: 85, durationMonths: 1, seats: 2, filled: 1, category: 'Music' },
-  { id: 'm5', name: 'Google One 2TB', host: 'Priya L.', trust: 5.0, pricePerSeat: 160, durationMonths: 12, seats: 5, filled: 2, category: 'Cloud' },
-  { id: 'm6', name: 'iCloud+ 2TB', host: 'Vikram H.', trust: 4.5, pricePerSeat: 90, durationMonths: 1, seats: 6, filled: 6, category: 'Cloud' },
-  { id: 'm7', name: 'Duolingo Super Family', host: 'Aditi G.', trust: 4.8, pricePerSeat: 95, durationMonths: 3, seats: 6, filled: 3, category: 'Education' },
-  { id: 'm8', name: 'Coursera Plus', host: 'Harsh J.', trust: 4.4, pricePerSeat: 1100, durationMonths: 12, seats: 4, filled: 1, category: 'Education' },
-  { id: 'm9', name: 'Xbox Game Pass Ultimate', host: 'Yash C.', trust: 4.9, pricePerSeat: 180, durationMonths: 1, seats: 4, filled: 3, category: 'Games' },
-  { id: 'm10', name: 'PlayStation Plus Extra', host: 'Nikhil O.', trust: 4.3, pricePerSeat: 240, durationMonths: 3, seats: 4, filled: 2, category: 'Games' },
-  { id: 'm11', name: 'Canva Pro Team', host: 'Lina Q.', trust: 4.7, pricePerSeat: 120, durationMonths: 1, seats: 5, filled: 4, category: 'Others' },
-  { id: 'm12', name: 'Adobe Creative Cloud', host: 'Omar E.', trust: 4.6, pricePerSeat: 520, durationMonths: 1, seats: 3, filled: 1, category: 'Others' },
-]
+export const SEED_POOLS: Pool[] = []
+export const SEED_MARKET: MarketPool[] = []
+export const CURRENT_USER = ''
+export const CURRENT_EMAIL = ''
 
 export function pricePerSeat(monthly: number, seats: number, durationMonths: number) {
   if (!monthly || !seats || monthly <= 0 || seats <= 0) return 0

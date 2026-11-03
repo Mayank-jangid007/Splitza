@@ -54,6 +54,8 @@ type AuthContextType = AuthState & {
   resendOtp: (identifier: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  /** Set session from external auth (e.g. Google OAuth redirect). */
+  setSession: (token: string, user: User) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -72,11 +74,14 @@ export const useAuth = (): AuthContextType => {
 // ---------------------------------------------------------------------------
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [state, setState] = useState<AuthState>(() => ({
-    user: getStoredUser(),
+  // SSR-safe: always start with null user + loading=true so server and
+  // client render the same initial output. Restore from localStorage
+  // inside the effect below to avoid hydration mismatches.
+  const [state, setState] = useState<AuthState>({
+    user: null,
     loading: true,
-    accessToken: typeof window !== "undefined" ? getToken() : null,
-  }));
+    accessToken: null,
+  });
 
   // On mount: restore session from localStorage token
   useEffect(() => {
@@ -166,8 +171,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, user: res.data.user }));
   }, []);
 
+  /** Set session from external auth (e.g. Google OAuth redirect). */
+  const setSession = useCallback((token: string, user: User) => {
+    setToken(token);
+    setStoredUser(user);
+    setState({ user, accessToken: token, loading: false });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, verifyOtp, resendOtp, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, verifyOtp, resendOtp, logout, refreshUser, setSession }}>
       {children}
     </AuthContext.Provider>
   );
