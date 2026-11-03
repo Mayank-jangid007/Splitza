@@ -134,7 +134,9 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Don't redirect until AuthContext has finished restoring/loading
+    if (loading) return;
+    if (!user) {
       router.push("/landing");
       return;
     }

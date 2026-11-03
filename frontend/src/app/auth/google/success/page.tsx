@@ -35,8 +35,10 @@ function GoogleSuccessContent() {
       // Update AuthContext state (also writes to localStorage internally)
       setSession(token, user)
 
-      // Redirect to dashboard
-      router.replace("/dashboard")
+      // Wait for state to propagate before navigating
+      setTimeout(() => {
+        router.replace("/dashboard")
+      }, 100)
     } catch {
       router.replace("/auth/login?error=google_failed")
     }
