@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -83,13 +84,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     accessToken: null,
   });
 
-  // On mount: restore session from localStorage token
+  // On mount: restore session from localStorage token.
+  // Uses a ref to track if setSession was called externally (e.g. Google OAuth)
+  // so that restoreSession doesn't overwrite the externally-set state.
+  const sessionSetExternally = useRef(false);
+
   useEffect(() => {
     const restoreSession = async () => {
       const token = getToken();
       if (!token) {
-        setStoredUser(null);
-        setState((s) => ({ ...s, user: null, loading: false }));
+        // Don't clobber state if setSession already ran (Google OAuth success page)
+        if (!sessionSetExternally.current) {
+          setStoredUser(null);
+          setState((s) => ({ ...s, user: null, loading: false }));
+        }
         return;
       }
       try {
@@ -173,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Set session from external auth (e.g. Google OAuth redirect). */
   const setSession = useCallback((token: string, user: User) => {
+    sessionSetExternally.current = true;
     setToken(token);
     setStoredUser(user);
     setState({ user, accessToken: token, loading: false });
