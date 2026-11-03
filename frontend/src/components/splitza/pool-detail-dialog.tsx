@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AlertTriangle,
   CalendarClock,
   Check,
   Copy,
@@ -94,6 +95,7 @@ function JoinBody({
   const [copied, setCopied] = useState<'user' | 'pass' | null>(null)
   const [joinedCreds, setJoinedCreds] = useState<PoolCredentials | null>(null)
   const [alreadyMember, setAlreadyMember] = useState(false)
+  const [joinError, setJoinError] = useState<string | null>(null)
   const fallbackCreds = credentialsFor(pool)
   const creds = {
     username: joinedCreds?.username ?? fallbackCreds.username,
@@ -114,38 +116,45 @@ function JoinBody({
     if (step !== 'lock') return
     let cancelled = false
     const t = setTimeout(async () => {
-      if (UUID_RE.test(pool.id)) {
-        try {
-          const myRes = await poolsApi.getMyPools()
-          const already = myRes.ok && myRes.data.some((p) => p.id === pool.id)
-          if (already) {
-            if (!cancelled) setAlreadyMember(true)
+      if (!UUID_RE.test(pool.id)) {
+        // Demo/seed pool — can't actually join via API
+        if (!cancelled) setJoinError('This is a demo pool. Join a real pool from the marketplace to test the full flow.')
+        if (!cancelled) setStep('creds')
+        return
+      }
+      try {
+        const myRes = await poolsApi.getMyPools()
+        const already = myRes.ok && myRes.data.some((p) => p.id === pool.id)
+        if (already) {
+          if (!cancelled) setAlreadyMember(true)
+          try {
+            const credsRes = await poolsApi.getCredentials(pool.id)
+            if (!cancelled && credsRes.ok && credsRes.data) setJoinedCreds(credsRes.data)
+          } catch {
+            // fallback credentials are shown
+          }
+        } else {
+          const res = await poolsApi.join(pool.id)
+          if (!cancelled && res.ok && res.data?.credentials) {
+            setJoinedCreds(res.data.credentials)
+          } else if (!cancelled && res.ok) {
+            // Join succeeded but no credentials yet — try fetching them
             try {
               const credsRes = await poolsApi.getCredentials(pool.id)
               if (!cancelled && credsRes.ok && credsRes.data) setJoinedCreds(credsRes.data)
             } catch {
               // fallback credentials are shown
             }
-          } else {
-            const res = await poolsApi.join(pool.id)
-            if (!cancelled && res.ok && res.data?.credentials) {
-              setJoinedCreds(res.data.credentials)
-            } else if (!cancelled) {
-              try {
-                const credsRes = await poolsApi.getCredentials(pool.id)
-                if (!cancelled && credsRes.ok && credsRes.data) setJoinedCreds(credsRes.data)
-              } catch {
-                // fallback credentials are shown
-              }
-            }
           }
-        } catch {
-          // fallback credentials are shown
         }
-      }
-      if (!cancelled) {
-        onComplete?.(pool)
-        setStep('creds')
+        if (!cancelled) {
+          onComplete?.(pool)
+          setStep('creds')
+        }
+      } catch (err) {
+        console.error('[JoinFlow] Join failed:', err)
+        if (!cancelled) setJoinError(err instanceof Error ? err.message : 'Failed to join pool. Please try again.')
+        if (!cancelled) setStep('creds')
       }
     }, 1200)
     return () => {
@@ -338,51 +347,84 @@ function JoinBody({
 
       {step === 'creds' && (
         <div className="space-y-5">
-          <div className="rounded-2xl border-2 border-ink bg-mint p-4">
-            <p className="font-display-tight text-xl font-black">
-              {alreadyMember ? 'Already a member' : 'Payment locked'}
-            </p>
-            <p className="mt-1 text-xs">
-              {alreadyMember
-                ? `You already have a seat in ${pool.name}. Here are your login details.`
-                : `Verified. Here are your login details for ${pool.name}.`}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <CredRow
-              label="Username"
-              value={creds.username}
-              copied={copied === 'user'}
-              onCopy={() => copy('user')}
-            />
-            <CredRow
-              label="Password"
-              value={reveal ? creds.password : '•'.repeat(creds.password.length)}
-              copied={copied === 'pass'}
-              onCopy={() => copy('pass')}
-              extra={
-                <button
-                  type="button"
-                  onClick={() => setReveal((v) => !v)}
-                  aria-label={reveal ? 'Hide password' : 'Show password'}
-                  className="neo-press grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink bg-paper shadow-neo-sm outline-none focus-visible:ring-4 focus-visible:ring-ink/30"
-                >
-                  {reveal ? <EyeOff className="size-4" strokeWidth={3} /> : <Eye className="size-4" strokeWidth={3} />}
-                </button>
-              }
-            />
-          </div>
-          <NeoButton
-            className="w-full"
-            size="lg"
-            tone="ink"
-            onClick={() => {
-              onDone?.()
-              onClose()
-            }}
-          >
-            Go to my pools
-          </NeoButton>
+          {joinError ? (
+            <div className="rounded-2xl border-2 border-ink bg-[#ffe1db] p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-[#c8260e]" strokeWidth={2.5} />
+                <div>
+                  <p className="font-display-tight text-xl font-black">Join failed</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink/80">{joinError}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-ink bg-mint p-4">
+              <p className="font-display-tight text-xl font-black">
+                {alreadyMember ? 'Already a member' : 'Payment locked'}
+              </p>
+              <p className="mt-1 text-xs">
+                {alreadyMember
+                  ? `You already have a seat in ${pool.name}. Here are your login details.`
+                  : `Verified. Here are your login details for ${pool.name}.`}
+              </p>
+            </div>
+          )}
+
+          {joinError ? (
+            <div className="flex gap-3">
+              <NeoButton type="button" tone="paper" onClick={() => { setJoinError(null); setStep('pay') }}>
+                Back
+              </NeoButton>
+              <NeoButton
+                className="flex-1"
+                tone="ink"
+                onClick={() => {
+                  onDone?.()
+                  onClose()
+                }}
+              >
+                Back to marketplace
+              </NeoButton>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <CredRow
+                  label="Username"
+                  value={creds.username}
+                  copied={copied === 'user'}
+                  onCopy={() => copy('user')}
+                />
+                <CredRow
+                  label="Password"
+                  value={reveal ? creds.password : '•'.repeat(creds.password.length)}
+                  copied={copied === 'pass'}
+                  onCopy={() => copy('pass')}
+                  extra={
+                    <button
+                      type="button"
+                      onClick={() => setReveal((v) => !v)}
+                      aria-label={reveal ? 'Hide password' : 'Show password'}
+                      className="neo-press grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink bg-paper shadow-neo-sm outline-none focus-visible:ring-4 focus-visible:ring-ink/30"
+                    >
+                      {reveal ? <EyeOff className="size-4" strokeWidth={3} /> : <Eye className="size-4" strokeWidth={3} />}
+                    </button>
+                  }
+                />
+              </div>
+              <NeoButton
+                className="w-full"
+                size="lg"
+                tone="ink"
+                onClick={() => {
+                  onDone?.()
+                  onClose()
+                }}
+              >
+                Go to my pools
+              </NeoButton>
+            </>
+          )}
         </div>
       )}
     </div>

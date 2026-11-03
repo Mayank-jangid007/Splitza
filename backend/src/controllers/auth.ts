@@ -21,9 +21,12 @@ export const register = async (
       throw new AppError("Name, email and password are required", 400);
     }
 
-    if (!["HOST", "MEMBER"].includes(role)) {
+    if (!["HOST", "MEMBER", "COHOST"].includes(role)) {
       throw new AppError("Role must be HOST or MEMBER", 400);
     }
+
+    // Normalize COHOST → MEMBER (frontend legacy naming)
+    const normalizedRole = role === "COHOST" ? "MEMBER" : role;
 
     // Check if user already exists
     const existing = await prisma.user.findFirst({
@@ -41,7 +44,7 @@ export const register = async (
         email,
         phone: phone || null,
         passwordHash: hashedPassword,
-        role,
+        role: normalizedRole as "HOST" | "MEMBER",
       },
       select: { id: true, name: true, email: true, phone: true, role: true },
     });

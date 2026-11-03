@@ -9,7 +9,6 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import {
   CATEGORIES,
-  SEED_MARKET,
   planDurationLabel,
   rupee,
   type Category,
@@ -90,6 +89,7 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
   const [filter, setFilter] = useState<Filter>('All')
   const [selected, setSelected] = useState<MarketPool | null>(null)
   const [livePools, setLivePools] = useState<MarketPool[]>([])
+  const [liveLoading, setLiveLoading] = useState(true)
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -109,6 +109,7 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
 
   useEffect(() => {
     let cancelled = false
+    setLiveLoading(true)
     poolsApi
       .getMarketplace({ hasOpenSeats: false })
       .then((res) => {
@@ -116,7 +117,10 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
         if (res.ok && Array.isArray(res.data)) setLivePools(res.data.map(apiItemToMarket))
       })
       .catch(() => {
-        // Non-fatal — demo pools remain visible.
+        // Non-fatal — empty state is shown.
+      })
+      .finally(() => {
+        if (!cancelled) setLiveLoading(false)
       })
     return () => {
       cancelled = true
@@ -124,8 +128,9 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
   }, [])
 
   const pools = useMemo(() => {
-    const liveNames = new Set(livePools.map((p) => p.name.toLowerCase()))
-    return [...livePools, ...SEED_MARKET.filter((p) => !liveNames.has(p.name.toLowerCase()))]
+    // Only show real pools from the backend. Demo/seed data is NOT
+    // merged in because those pools can't actually be joined.
+    return livePools
   }, [livePools])
 
   const results = useMemo(() => {
@@ -237,7 +242,13 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
       </section>
 
       <section aria-live="polite" aria-label="Marketplace pools">
-        {results.length === 0 ? (
+        {liveLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label="Loading marketplace">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-64 animate-pulse rounded-3xl border-2 border-ink/40 bg-paper/70" />
+            ))}
+          </div>
+        ) : results.length === 0 ? (
           <div className="grid items-center gap-6 rounded-[32px] border-2 border-dashed border-ink bg-paper p-6 sm:grid-cols-[200px_1fr] sm:p-8">
             <div className="relative mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-3xl border-2 border-ink shadow-neo">
               <Image

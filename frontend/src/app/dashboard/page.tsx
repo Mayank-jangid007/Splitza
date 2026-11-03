@@ -122,6 +122,7 @@ export default function Dashboard() {
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
 
   const fetchPools = useCallback(async () => {
+    setPoolsLoading(true);
     try {
       const myRes = await poolsApi.getMyPools();
       if (myRes.ok) setPools(myRes.data);
@@ -203,6 +204,17 @@ export default function Dashboard() {
     if (raw) setSelectedPool(apiPoolToUIPool(raw));
   };
 
+  if (loading) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-cream">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-12 animate-spin rounded-full border-4 border-ink/20 border-t-ink" />
+          <p className="text-sm font-bold text-ink/60">Loading your dashboard…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isSharing) {
     return (
       <SharePage
@@ -239,7 +251,10 @@ export default function Dashboard() {
               onJoin={() => {
                 void fetchPools();
               }}
-              onDone={() => setIsBrowsing(false)}
+              onDone={() => {
+                void fetchPools();
+                setIsBrowsing(false);
+              }}
             />
           </div>
         ) : (

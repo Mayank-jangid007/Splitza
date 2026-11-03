@@ -1,13 +1,12 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { CURRENT_EMAIL, CURRENT_USER } from '@/lib/splitza'
 import { Header, type View } from './header'
 import { Hero } from './hero'
 
 export function Home({
-  userName = CURRENT_USER,
-  email = CURRENT_EMAIL,
+  userName = '',
+  email = '',
   view = 'pools',
   onView,
   onShare,

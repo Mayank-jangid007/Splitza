@@ -58,7 +58,7 @@ export default function RegisterForm() {
         email: form.email,
         phone: form.phone || undefined,
         password: form.password,
-        role: 'COHOST',
+        role: 'HOST',
       })
       sessionStorage.setItem('splitza_otp_identifier', form.email)
       router.push('/auth/verify-otp')
