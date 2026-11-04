@@ -1,7 +1,7 @@
 'use client'
 
 import { Menu } from '@base-ui/react/menu'
-import { ChevronDown, LogOut, MessageSquareHeart, Wallet } from 'lucide-react'
+import { ChevronDown, HelpCircle, LogOut, MessageSquareHeart, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from './ui'
 
@@ -11,12 +11,18 @@ const itemClass =
 export function ProfileMenu({
   name,
   email,
-  onWallet,
+  avatarUrl,
+  onProfile,
+  onFaq,
+  onFeedback,
   onLogout,
 }: {
   name: string
   email: string
-  onWallet: () => void
+  avatarUrl?: string | null
+  onProfile: () => void
+  onFaq: () => void
+  onFeedback: () => void
   onLogout?: () => void
 }) {
   return (
@@ -25,7 +31,7 @@ export function ProfileMenu({
         aria-label="Open profile menu"
         className="group flex items-center gap-1.5 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-ink/30"
       >
-        <Avatar name={name} index={4} size={42} className="shadow-neo-sm" />
+        <Avatar name={name} avatarUrl={avatarUrl} index={4} size={42} className="shadow-neo-sm" />
         <ChevronDown
           className="size-4 transition-transform group-data-[popup-open]:rotate-180"
           strokeWidth={3}
@@ -41,21 +47,22 @@ export function ProfileMenu({
             )}
           >
             <div className="mb-2 flex items-center gap-3 rounded-2xl border-2 border-ink bg-lav p-3">
-              <Avatar name={name} index={1} size={44} />
+              <Avatar name={name} avatarUrl={avatarUrl} index={1} size={44} />
               <div className="min-w-0">
                 <p className="truncate font-display-tight text-lg font-black">{name}</p>
                 <p className="truncate text-xs">{email}</p>
               </div>
             </div>
 
-            <Menu.Item className={itemClass} onClick={onWallet}>
-              <Wallet className="size-4" strokeWidth={3} aria-hidden="true" />
-              My wallet
+            <Menu.Item className={itemClass} onClick={onProfile}>
+              <UserRound className="size-4" strokeWidth={3} aria-hidden="true" />
+              Profile
             </Menu.Item>
-            <Menu.Item
-              className={itemClass}
-              render={<a href="mailto:feedback@splitza.app?subject=Splitza%20feedback" />}
-            >
+            <Menu.Item className={itemClass} onClick={onFaq}>
+              <HelpCircle className="size-4" strokeWidth={3} aria-hidden="true" />
+              FAQ
+            </Menu.Item>
+            <Menu.Item className={itemClass} onClick={onFeedback}>
               <MessageSquareHeart className="size-4" strokeWidth={3} aria-hidden="true" />
               Feedback
             </Menu.Item>

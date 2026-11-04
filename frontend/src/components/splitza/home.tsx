@@ -7,27 +7,35 @@ import { Hero } from './hero'
 export function Home({
   userName = '',
   email = '',
+  avatarUrl,
   view = 'pools',
   onView,
   onShare,
   onBrowse,
-  onWallet,
+  onProfile,
+  onFaq,
+  onFeedback,
   onLogout,
   children,
 }: {
   userName?: string
   email?: string
+  avatarUrl?: string | null
   view?: View
   onView?: (view: View) => void
   onShare?: () => void
   onBrowse?: () => void
-  onWallet?: () => void
+  onProfile?: () => void
+  onFaq?: () => void
+  onFeedback?: () => void
   onLogout?: () => void
   children?: ReactNode
 }) {
   const handleShare = onShare ?? (() => {})
   const handleBrowse = onBrowse ?? (() => {})
-  const handleWallet = onWallet ?? (() => {})
+  const handleProfile = onProfile ?? (() => {})
+  const handleFaq = onFaq ?? (() => {})
+  const handleFeedback = onFeedback ?? (() => {})
   const handleView = onView ?? (() => {})
 
   return (
@@ -39,7 +47,10 @@ export function Home({
           onShare={handleShare}
           userName={userName}
           email={email}
-          onWallet={handleWallet}
+          avatarUrl={avatarUrl}
+          onProfile={handleProfile}
+          onFaq={handleFaq}
+          onFeedback={handleFeedback}
           onLogout={onLogout}
         />
 

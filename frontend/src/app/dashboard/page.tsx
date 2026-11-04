@@ -114,6 +114,7 @@ export default function Dashboard() {
   const router = useRouter();
   const userName = user?.name?.split(" ")[0] ?? "there";
   const userEmail = user?.email ?? "you@splitza.app";
+  const userAvatarUrl = user?.avatarUrl ?? null;
 
   const [isSharing, setIsSharing] = useState(false);
   const [isBrowsing, setIsBrowsing] = useState(false);
@@ -236,11 +237,20 @@ export default function Dashboard() {
       <Home
         userName={userName}
         email={userEmail}
+        avatarUrl={userAvatarUrl}
         view={isBrowsing ? "market" : "pools"}
         onView={(view) => setIsBrowsing(view === "market")}
         onShare={() => setIsSharing(true)}
         onBrowse={() => setIsBrowsing(true)}
-        onWallet={() => {}}
+        onProfile={() => {
+          router.push('/profile')
+        }}
+        onFaq={() => {
+          router.push('/faq')
+        }}
+        onFeedback={() => {
+          router.push('/feedback')
+        }}
         onLogout={logout}
       >
         {isBrowsing ? (

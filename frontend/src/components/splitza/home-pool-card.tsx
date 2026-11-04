@@ -1,7 +1,6 @@
 import { ArrowUpRight, CalendarClock, Globe, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { planDurationLabel, rupee, type Pool } from '@/lib/splitza'
-import { EscrowBar } from './escrow-steps'
 import { Chip, PlatformLogo } from './ui'
 
 export function SeatDots({ filled, seats }: { filled: number; seats: number }) {
@@ -111,7 +110,6 @@ export function PoolCard({
         </div>
       </div>
 
-      {pool.role === 'joined' && <EscrowBar stepsDone={pool.stepsDone} />}
     </article>
   )
 }

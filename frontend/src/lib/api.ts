@@ -127,6 +127,8 @@ export type User = {
   role: "HOST" | "COHOST" | "ADMIN";
   avatarUrl?: string;
   trustScore: number;
+  upiId?: string | null;
+  hasPassword?: boolean;
   createdAt?: string;
 };
 
@@ -167,6 +169,18 @@ export const auth = {
   refresh: () => request<{ success: boolean; data: { accessToken: string; user: User } }>(
     "/auth/refresh", { method: "POST", authenticated: false }
   ),
+
+  updateProfile: (data: { name?: string; upiId?: string | null }) =>
+    request<{ success: boolean; data: { user: User } }>("/auth/me", {
+      method: "PATCH",
+      body: data,
+    }),
+
+  changePassword: (data: { currentPassword?: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>("/auth/change-password", {
+      method: "POST",
+      body: data,
+    }),
 };
 
 // ---------------------------------------------------------------------------

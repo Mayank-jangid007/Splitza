@@ -8,6 +8,8 @@ import {
   resendOtp,
   logout,
   getMe,
+  updateMe,
+  changePassword,
 } from "../controllers/auth";
 import { googleCallback } from "../controllers/googleAuth";
 import { authenticate } from "../middleware/auth";
@@ -21,6 +23,8 @@ router.post("/resend-otp", resendOtp);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
 router.get("/me", authenticate, getMe);
+router.patch("/me", authenticate, updateMe);
+router.post("/change-password", authenticate, changePassword);
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 // Step 1: Redirect user to Google consent screen

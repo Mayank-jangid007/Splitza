@@ -3,7 +3,7 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import { forwardRef } from 'react'
+import { forwardRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { detectPlatform, initialsOf } from '@/lib/splitza'
 
@@ -122,20 +122,25 @@ const AVATAR_TONES = ['#f5aee3', '#f8d56b', '#a9c7f7', '#a4ecb0', '#b3a6f7', '#f
 
 export function Avatar({
   name,
+  avatarUrl,
   index = 0,
   size = 32,
   className,
 }: {
   name: string
+  avatarUrl?: string | null
   index?: number
   size?: number
   className?: string
 }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const showImage = Boolean(avatarUrl) && failedUrl !== avatarUrl
+
   return (
     <span
       title={name}
       className={cn(
-        'grid shrink-0 place-items-center rounded-full border-2 border-ink font-display font-black text-ink',
+        'grid shrink-0 place-items-center overflow-hidden rounded-full border-2 border-ink font-display font-black text-ink',
         className,
       )}
       style={{
@@ -145,7 +150,20 @@ export function Avatar({
         backgroundColor: AVATAR_TONES[index % AVATAR_TONES.length],
       }}
     >
-      {initialsOf(name)}
+      {showImage ? (
+        <Image
+          src={avatarUrl!}
+          alt={name}
+          width={size}
+          height={size}
+          unoptimized
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(avatarUrl ?? null)}
+          className="size-full object-cover"
+        />
+      ) : (
+        initialsOf(name)
+      )}
     </span>
   )
 }

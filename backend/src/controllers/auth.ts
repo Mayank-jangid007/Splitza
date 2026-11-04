@@ -6,6 +6,8 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from ".
 import { generateOtp, verifyOtp, sendOtp } from "../services/otp";
 import { AuthRequest } from "../middleware/auth";
 
+const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+
 // ---------------------------------------------------------------------------
 // POST /api/auth/register
 // ---------------------------------------------------------------------------
@@ -46,7 +48,7 @@ export const register = async (
         passwordHash: hashedPassword,
         role: normalizedRole as "HOST" | "MEMBER",
       },
-      select: { id: true, name: true, email: true, phone: true, role: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, upiId: true },
     });
 
     // Generate and send OTP — always use email as identifier for consistency
@@ -85,11 +87,12 @@ export const verifyOtpHandler = async (
 
     const user = await prisma.user.findFirst({
       where: { OR: [{ email: identifier }, { phone: identifier }] },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, upiId: true, passwordHash: true },
     });
 
     if (!user) throw new AppError("User not found", 404);
 
+    const { passwordHash, ...safeUser } = user;
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
@@ -103,7 +106,7 @@ export const verifyOtpHandler = async (
     res.json({
       success: true,
       message: "OTP verified successfully",
-      data: { user, accessToken },
+      data: { user: { ...safeUser, hasPassword: Boolean(passwordHash) }, accessToken },
     });
   } catch (err) {
     next(err);
@@ -147,7 +150,15 @@ export const login = async (
       success: true,
       message: "Login successful",
       data: {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl },
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatarUrl: user.avatarUrl,
+          upiId: user.upiId,
+          hasPassword: Boolean(user.passwordHash),
+        },
         accessToken,
       },
     });
@@ -171,13 +182,17 @@ export const refreshToken = async (
     const payload = verifyRefreshToken(token);
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, upiId: true, passwordHash: true },
     });
 
     if (!user) throw new AppError("User not found", 404);
 
+    const { passwordHash, ...safeUser } = user;
     const newAccessToken = generateAccessToken(user.id);
-    res.json({ success: true, data: { accessToken: newAccessToken, user } });
+    res.json({
+      success: true,
+      data: { accessToken: newAccessToken, user: { ...safeUser, hasPassword: Boolean(passwordHash) } },
+    });
   } catch (err) {
     next(err);
   }
@@ -231,10 +246,117 @@ export const getMe = async (
       select: {
         id: true, name: true, email: true, phone: true,
         role: true, avatarUrl: true, trustScore: true, createdAt: true,
+        upiId: true, passwordHash: true,
       },
     });
     if (!user) throw new AppError("User not found", 404);
-    res.json({ success: true, data: { user } });
+    const { passwordHash, ...safeUser } = user;
+    res.json({
+      success: true,
+      data: { user: { ...safeUser, hasPassword: Boolean(passwordHash) } },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// PATCH /api/auth/me
+// ---------------------------------------------------------------------------
+export const updateMe = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { name, upiId } = req.body as { name?: unknown; upiId?: unknown };
+    const data: { name?: string; upiId?: string | null } = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string") throw new AppError("Name must be a string", 400);
+      const trimmed = name.trim();
+      if (trimmed.length < 2 || trimmed.length > 120) {
+        throw new AppError("Name must be between 2 and 120 characters", 400);
+      }
+      data.name = trimmed;
+    }
+
+    if (upiId !== undefined) {
+      if (upiId === null || upiId === "") {
+        data.upiId = null;
+      } else if (typeof upiId !== "string" || !UPI_RE.test(upiId.trim())) {
+        throw new AppError("Enter a valid UPI ID, like name@okaxis", 400);
+      } else {
+        data.upiId = upiId.trim();
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new AppError("No profile fields to update", 400);
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data,
+      select: {
+        id: true, name: true, email: true, phone: true,
+        role: true, avatarUrl: true, trustScore: true, createdAt: true,
+        upiId: true, passwordHash: true,
+      },
+    });
+
+    const { passwordHash, ...safeUser } = user;
+    res.json({
+      success: true,
+      data: { user: { ...safeUser, hasPassword: Boolean(passwordHash) } },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/change-password
+// ---------------------------------------------------------------------------
+export const changePassword = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword?: unknown;
+      newPassword?: unknown;
+    };
+
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      throw new AppError("New password must be at least 8 characters", 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { id: true, passwordHash: true },
+    });
+    if (!user) throw new AppError("User not found", 404);
+
+    if (user.passwordHash) {
+      if (typeof currentPassword !== "string" || !currentPassword) {
+        throw new AppError("Current password is required", 400);
+      }
+      const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!matches) throw new AppError("Current password is incorrect", 401);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    res.json({
+      success: true,
+      message: user.passwordHash ? "Password updated" : "Password set",
+    });
   } catch (err) {
     next(err);
   }

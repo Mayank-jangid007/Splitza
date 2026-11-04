@@ -37,6 +37,8 @@ export const googleCallback = (req: Request, res: Response): void => {
       role: user.role,
       avatarUrl: user.avatarUrl,
       trustScore: user.trustScore,
+      upiId: user.upiId,
+      hasPassword: Boolean(user.passwordHash),
     })
   );
 

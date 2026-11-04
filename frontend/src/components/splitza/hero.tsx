@@ -3,8 +3,6 @@ import { Plus } from 'lucide-react'
 import { Flower, Squiggle } from './stickers'
 import { Chip, NeoButton } from './ui'
 
-const CROSS_PATTERN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M11 6v10M6 11h10' stroke='%23151515' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E")`
-
 export function Hero({
   userName,
   onShare,
@@ -16,21 +14,6 @@ export function Hero({
 }) {
   return (
     <section aria-labelledby="hero-title" className="relative">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute left-[34%] top-[30%] hidden size-64 rounded-full opacity-[0.16] lg:block"
-          style={{
-            backgroundImage:
-              'repeating-radial-gradient(circle at center, transparent 0 18px, #151515 18px 20px)',
-          }}
-        />
-        <div className="dots-bg absolute bottom-0 left-[38%] hidden h-24 w-56 rotate-[-4deg] rounded-2xl opacity-60 md:block" />
-        <div
-          className="absolute right-[46%] top-0 hidden h-24 w-32 opacity-50 lg:block"
-          style={{ backgroundImage: CROSS_PATTERN, backgroundSize: '22px 22px' }}
-        />
-      </div>
-
       <div className="relative grid items-center gap-10 lg:grid-cols-[1.35fr_1fr]">
         <div className="relative">
           <div className="mb-6 flex items-center gap-3">
@@ -47,17 +30,12 @@ export function Hero({
           >
             <span className="flex items-center" aria-hidden="true">
               P
-              <Flower className="animate-spin-slow -mx-[0.02em] size-[0.8em] shrink-0" fill="#f5aee3" />
+              <Flower className="animate-spin-slow -mx-[0.02em] size-[0.8em] shrink-0" fill="#A9C7F7" />
               <Flower className="animate-spin-slow -mx-[0.02em] size-[0.8em] shrink-0 [animation-direction:reverse]" fill="#f8d56b" />
               l
             </span>
             <span className="block">it up.</span>
           </h1>
-
-          <div aria-hidden="true" className="mt-4 flex items-center gap-3">
-            <span className="stripes-bg h-3.5 w-36 rounded-full border-2 border-ink bg-sun" />
-            <Flower className="animate-spin-slow size-7" fill="#a4ecb0" petals={8} />
-          </div>
 
           <p className="mt-5 max-w-sm text-base font-bold sm:text-lg">
             Split subscriptions with people you trust.

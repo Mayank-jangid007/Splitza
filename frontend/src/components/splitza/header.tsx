@@ -19,7 +19,10 @@ export function Header({
   onShare,
   userName,
   email,
-  onWallet,
+  avatarUrl,
+  onProfile,
+  onFaq,
+  onFeedback,
   onLogout,
 }: {
   view: View
@@ -27,7 +30,10 @@ export function Header({
   onShare: () => void
   userName: string
   email: string
-  onWallet: () => void
+  avatarUrl?: string | null
+  onProfile: () => void
+  onFaq: () => void
+  onFeedback: () => void
   onLogout?: () => void
 }) {
   return (
@@ -69,7 +75,15 @@ export function Header({
           <NeoButton tone="sun" size="sm" onClick={onShare} className="size-10 px-0 sm:hidden" aria-label="Share a plan">
             <Plus className="size-5" strokeWidth={3.5} />
           </NeoButton>
-          <ProfileMenu name={userName} email={email} onWallet={onWallet} onLogout={onLogout} />
+          <ProfileMenu
+            name={userName}
+            email={email}
+            avatarUrl={avatarUrl}
+            onProfile={onProfile}
+            onFaq={onFaq}
+            onFeedback={onFeedback}
+            onLogout={onLogout}
+          />
         </div>
       </div>
     </header>
