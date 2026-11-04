@@ -17,12 +17,20 @@ export default function LoginForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [serverError, setServerError] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
+  const [next, setNext] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && user && accessToken) {
-      router.push(user.role === 'ADMIN' ? '/admin' : '/dashboard')
-    }
-  }, [user, accessToken, authLoading, router])
+    const raw = new URLSearchParams(window.location.search).get('next')
+    const safe = raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : null
+    setNext(safe)
+    setReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!ready || authLoading || !user || !accessToken) return
+    router.push(next ?? (user.role === 'ADMIN' ? '/admin' : '/dashboard'))
+  }, [ready, next, user, accessToken, authLoading, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -41,7 +49,7 @@ export default function LoginForm() {
     setServerError('')
     try {
       const result = await login(form.email, form.password)
-      router.push(result.role === 'ADMIN' ? '/admin' : '/dashboard')
+      router.push(next ?? (result.role === 'ADMIN' ? '/admin' : '/dashboard'))
     } catch (err) {
       setServerError(err instanceof ApiError ? err.message : 'Invalid email or password')
     } finally {

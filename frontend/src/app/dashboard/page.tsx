@@ -122,6 +122,16 @@ export default function Dashboard() {
   const [poolsLoading, setPoolsLoading] = useState(true);
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wantsMarket = params.get("view") === "market";
+    const wantsCreate = params.get("create") === "1" || params.get("share") === "1";
+    if (!wantsMarket && !wantsCreate) return;
+    if (wantsMarket) setIsBrowsing(true);
+    if (wantsCreate) setIsSharing(true);
+    router.replace("/dashboard", { scroll: false });
+  }, [router]);
+
   const fetchPools = useCallback(async () => {
     setPoolsLoading(true);
     try {

@@ -1,5 +1,8 @@
+'use client'
+
 import Image from 'next/image'
 import { Plus } from 'lucide-react'
+import { useReveal } from '@/components/reveal'
 import { Flower, Squiggle } from './stickers'
 import { Chip, NeoButton } from './ui'
 
@@ -12,8 +15,10 @@ export function Hero({
   onShare: () => void
   onBrowse: () => void
 }) {
+  const revealRef = useReveal<HTMLElement>()
+
   return (
-    <section aria-labelledby="hero-title" className="relative">
+    <section ref={revealRef} aria-labelledby="hero-title" className="relative">
       <div className="relative grid items-center gap-10 lg:grid-cols-[1.35fr_1fr]">
         <div className="relative">
           <div className="mb-6 flex items-center gap-3">
@@ -24,6 +29,7 @@ export function Hero({
           </div>
 
           <h1
+            data-reveal
             id="hero-title"
             aria-label="Pool it up."
             className="font-display-tight text-[clamp(3.5rem,11vw,7.5rem)] font-black uppercase"
@@ -37,22 +43,22 @@ export function Hero({
             <span className="block">it up.</span>
           </h1>
 
-          <p className="mt-5 max-w-sm text-base font-bold sm:text-lg">
+          <p data-reveal className="mt-5 max-w-sm text-base font-bold sm:text-lg">
             Split subscriptions with people you trust.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <NeoButton tone="sun" size="lg" onClick={onShare}>
+            <NeoButton data-reveal tone="sun" size="lg" onClick={onShare}>
               <Plus className="size-5" strokeWidth={3.5} />
               Share a plan
             </NeoButton>
-            <NeoButton tone="paper" size="lg" onClick={onBrowse}>
+            <NeoButton data-reveal tone="paper" size="lg" onClick={onBrowse}>
               Join a subscription
             </NeoButton>
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+        <div data-reveal className="relative mx-auto w-full max-w-xl lg:max-w-none">
           <Image
             src="/illustrations/splitza-mascot.webp"
             alt="Splitza mascot with Netflix, Spotify and YouTube subscription bubbles"

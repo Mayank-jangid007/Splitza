@@ -33,6 +33,7 @@ export function PoolCard({
 
   return (
     <article
+      data-reveal
       className="neo-press group relative flex min-w-0 flex-col gap-5 rounded-3xl border-2 border-ink bg-paper p-5 shadow-neo"
     >
       <div className="flex items-start gap-4">

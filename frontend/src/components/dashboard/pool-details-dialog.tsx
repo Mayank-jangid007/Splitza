@@ -89,6 +89,8 @@ export function PoolDetailsDialog({
             role="dialog"
             aria-modal="true"
             aria-label={pool.name}
+            data-lenis-pause
+            data-lenis-prevent
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}

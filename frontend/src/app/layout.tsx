@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, JetBrains_Mono, Space_Mono, Unbounded } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { SmoothScroll } from "@/components/smooth-scroll";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -62,7 +63,7 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>
-          {children}
+          <SmoothScroll>{children}</SmoothScroll>
         </AuthProvider>
       </body>
     </html>

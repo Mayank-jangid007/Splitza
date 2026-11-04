@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react
 import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useReveal } from '@/components/reveal'
 import type { Pool } from '@/lib/splitza'
 import { PoolCard } from './home-pool-card'
 import { Chip, NeoButton } from './ui'
@@ -31,6 +32,8 @@ export function PoolsSection({
 }) {
   const [filter, setFilter] = useState<PoolFilter>('all')
   const [showAll, setShowAll] = useState(false)
+  const headerRevealRef = useReveal<HTMLDivElement>()
+  const listRevealRef = useReveal<HTMLDivElement>([pools.length, filter, showAll])
 
   const counts = {
     all: pools.length,
@@ -43,14 +46,15 @@ export function PoolsSection({
 
   return (
     <section id="pools" aria-labelledby="pools-title" className="scroll-mt-24">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div ref={headerRevealRef} className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em]">/ Hosted + joined</p>
-          <h2 id="pools-title" className="font-display-tight text-3xl font-black sm:text-5xl">
+          <p data-reveal className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em]">/ Hosted + joined</p>
+          <h2 data-reveal id="pools-title" className="font-display-tight text-3xl font-black sm:text-5xl">
             My pools
           </h2>
         </div>
         <div
+          data-reveal
           role="tablist"
           aria-label="Filter pools"
           hidden={pools.length === 0}
@@ -88,7 +92,7 @@ export function PoolsSection({
         </div>
       </div>
 
-      <div className="mt-8" role="tabpanel">
+      <div ref={listRevealRef} className="mt-8" role="tabpanel">
         {pools.length === 0 ? (
           <FirstRun onShare={onShare} onBrowse={onBrowse} />
         ) : filtered.length === 0 ? (
@@ -121,7 +125,7 @@ export function PoolsSection({
             </div>
             {(filtered.length > 2 || showAll) && (
               <div className="mt-8 flex justify-center">
-                <NeoButton tone="ink" size="md" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
+                <NeoButton data-reveal tone="ink" size="md" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
                   {showAll ? (
                     <>
                       Show fewer <ChevronUp className="size-4" strokeWidth={3} />
@@ -177,7 +181,7 @@ const FIRST_RUN_STATS = [
 function FirstRun({ onShare, onBrowse }: { onShare: () => void; onBrowse: () => void }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="relative overflow-hidden rounded-[32px] border-2 border-ink bg-sky p-6 shadow-neo sm:p-10">
+      <div data-reveal className="relative overflow-hidden rounded-[32px] border-2 border-ink bg-sky p-6 shadow-neo sm:p-10">
         <div aria-hidden="true" className="dots-bg pointer-events-none absolute inset-0 opacity-40" />
         <div
           aria-hidden="true"
@@ -242,6 +246,7 @@ function FirstRun({ onShare, onBrowse }: { onShare: () => void; onBrowse: () => 
       <div className="grid gap-6 md:grid-cols-2">
         {PATHS.map((p, i) => (
           <article
+            data-reveal
             key={p.key}
             className="group flex flex-col overflow-hidden rounded-[28px] border-2 border-ink bg-paper shadow-neo transition-transform duration-200 hover:-translate-y-1"
           >
@@ -311,7 +316,7 @@ export function EmptyState({
   children?: React.ReactNode
 }) {
   return (
-    <div className="grid items-center gap-6 rounded-[32px] border-2 border-dashed border-ink bg-paper p-6 sm:grid-cols-[220px_1fr] sm:p-8">
+    <div data-reveal className="grid items-center gap-6 rounded-[32px] border-2 border-dashed border-ink bg-paper p-6 sm:grid-cols-[220px_1fr] sm:p-8">
       <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl border-2 border-ink bg-cream shadow-neo">
         <Image
           src="/illustrations/empty-seat.png"

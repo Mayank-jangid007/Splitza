@@ -35,9 +35,15 @@ function GoogleSuccessContent() {
       // Update AuthContext state (also writes to localStorage internally)
       setSession(token, user)
 
-      // Redirect to dashboard on next tick to ensure state has flushed
+      const rawNext = sessionStorage.getItem("splitza_next")
+      sessionStorage.removeItem("splitza_next")
+      const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/auth")
+        ? rawNext
+        : "/dashboard"
+
+      // Redirect on next tick to ensure state has flushed
       requestAnimationFrame(() => {
-        router.replace("/dashboard")
+        router.replace(next)
       })
     } catch {
       router.replace("/auth/login?error=google_failed")

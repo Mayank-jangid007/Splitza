@@ -8,6 +8,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowRight, Check, ChevronDown, CircleDollarSign, LockKeyhole, Menu, ShieldCheck, Sparkles, Wallet, X, Users } from 'lucide-react'
 import Link from 'next/link'
 import SplitFlapLogoTicker from '@/components/split-flap-logo-ticker'
+import { useAuth } from '@/context/AuthContext'
 import './landing.css'
 
 const marqueeRows = [
@@ -25,6 +26,13 @@ const subSteps = ['SELECT A PREMIUM APP', 'CONNECT UPI AUTOPAY', 'GET ENCRYPTED 
 const PLATFORMS = ["Netflix", "Spotify", "YouTube", "Canva", "ChatGPT"]
 
 export default function Home() {
+  const { user } = useAuth()
+  const startPoolHref = user
+    ? '/dashboard?view=pools&create=1'
+    : `/auth/login?next=${encodeURIComponent('/dashboard?view=pools&create=1')}`
+  const browseSeatsHref = user
+    ? '/dashboard?view=market'
+    : `/auth/login?next=${encodeURIComponent('/dashboard?view=market')}`
 
   useEffect(() => {
     gsap.registerPlugin(ScrollToPlugin, ScrollTrigger)
@@ -90,14 +98,14 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
-              href="/dashboard"
+              href={startPoolHref}
               className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--neo-text)] bg-[var(--neo-green)] px-6 py-3 text-sm font-bold text-[#020617] shadow-[3px_3px_0_var(--neo-text)] transition hover:-translate-y-0.5"
             >
               Start a pool
               <ArrowRight size={16} strokeWidth={2.5} />
             </Link>
             <Link
-              href="/marketplace"
+              href={browseSeatsHref}
               className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--neo-text)] bg-[var(--neo-surface)] px-6 py-3 text-sm font-bold text-[var(--neo-text)] transition hover:-translate-y-0.5"
             >
               Browse open seats

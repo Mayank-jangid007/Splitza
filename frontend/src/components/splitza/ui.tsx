@@ -199,8 +199,12 @@ export function NeoDialog({
     >
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-[2px] transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-        <Dialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-6">
+        <Dialog.Viewport
+          data-lenis-prevent
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-6"
+        >
           <Dialog.Popup
+            data-lenis-pause
             className={cn(
               'relative my-auto w-full overflow-hidden rounded-[28px] border-2 border-ink bg-cream shadow-neo-lg outline-none transition duration-200 data-[ending-style]:translate-y-4 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-4 data-[starting-style]:scale-95 data-[starting-style]:opacity-0',
               maxWidth,

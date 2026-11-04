@@ -86,6 +86,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <div className="grid grid-cols-2 gap-3">
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/google`}
+            onClick={() => {
+              const raw = new URLSearchParams(window.location.search).get('next')
+              const safe = raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : null
+              if (safe) sessionStorage.setItem('splitza_next', safe)
+              else sessionStorage.removeItem('splitza_next')
+            }}
             className={cn(
               'flex h-12 items-center justify-center gap-2.5 rounded-xl border-2 border-foreground bg-white text-sm font-bold',
               neoLift,

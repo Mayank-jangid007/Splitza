@@ -72,6 +72,7 @@ export function AllPoolsDialog({
             role="dialog"
             aria-modal="true"
             aria-label="All pools"
+            data-lenis-pause
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -111,7 +112,7 @@ export function AllPoolsDialog({
               />
             </div>
 
-            <ul className="flex-1 space-y-5 overflow-y-auto p-5">
+            <ul data-lenis-prevent className="flex-1 space-y-5 overflow-y-auto p-5">
               {visible.map((pool, index) => (
                 <li key={pool.id}>
                   <PoolCard

@@ -98,6 +98,7 @@ export function EscrowCheckout({ pool, onClose }: EscrowCheckoutProps) {
         onClick={onClose} aria-hidden="true" />
 
       <motion.div key="dialog" role="dialog" aria-modal="true" aria-label="Secure escrow payment"
+        data-lenis-pause data-lenis-prevent
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="brut fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] bg-cream p-0"
