@@ -148,7 +148,7 @@ export default function VerifyOtpPage() {
 
         {/* Logo */}
         <div className="otp-logo">
-          <div className="navbar-logo-icon" style={{ width: 48, height: 48, fontSize: "1.375rem", borderRadius: "14px" }}>S</div>
+          <img src="/logos/splitza-logo-white.png" alt="Splitza" style={{ height: 48, width: 'auto' }} />
         </div>
 
         {verified ? (

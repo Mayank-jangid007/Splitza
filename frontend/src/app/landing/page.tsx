@@ -62,7 +62,7 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false)
 
   return <main className="neo-home neo-dark">
-    <header className="neo-nav"><a href="#top" className="neo-logo"><span className="neo-logo-mark">S</span>SUBSPLIT</a><button className="neo-mobile-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">{menu ? <X size={20} /> : <Menu size={20} />}</button><nav className={menu ? 'neo-links is-open' : 'neo-links'}><a href="#trust">ABOUT</a><a href="#faq">FAQ</a><a href="#how">GUIDE</a></nav><div className="neo-actions"><a href="/auth/login" className="neo-login">LOGIN</a><a href="/auth/register" className="neo-button neo-button-small">START SAVING <ArrowRight size={15} /></a></div></header>
+    <header className="neo-nav"><a href="#top" className="neo-logo"><img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-10 w-auto" /></a><button className="neo-mobile-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">{menu ? <X size={20} /> : <Menu size={20} />}</button><nav className={menu ? 'neo-links is-open' : 'neo-links'}><a href="#trust">ABOUT</a><a href="#faq">FAQ</a><a href="#how">GUIDE</a></nav><div className="neo-actions"><a href="/auth/login" className="neo-login">LOGIN</a><a href="/auth/register" className="neo-button neo-button-small">START SAVING <ArrowRight size={15} /></a></div></header>
 
     <section id="top" className="relative overflow-hidden border-b border-[var(--neo-border)]">
       <div className="bg-dot-grid absolute inset-0" aria-hidden="true" />
@@ -149,6 +149,6 @@ export default function Home() {
 
     <section id="waitlist" className="neo-cta"><div className="neo-shell"><span>READY TO STOP OVERPAYING?</span><h2>Create your account<br />in under 60 seconds.</h2><div className="neo-cta-actions"><a href="/auth/register" className="neo-button">GET STARTED <ArrowRight size={17} /></a><a href="/auth/login" className="neo-button" style={{background:'#020617',color:'var(--neo-green)',borderColor:'#020617',boxShadow:'5px 5px 0 #fff'}}>ALREADY HAVE AN ACCOUNT? LOGIN <ArrowRight size={17} /></a></div></div></section>
 
-    <footer className="neo-footer neo-shell"><div><a href="#top" className="neo-logo">SUBSPLIT</a><p>Fair access to premium things.</p></div><div><b>PRODUCT</b><a href="#how">How it works</a><a href="#services">Browse slots</a></div><div><b>TRUST</b><a href="#trust">Protection</a><a href="#faq">FAQ</a></div><div><b>LEGAL</b><a href="#waitlist">Terms</a><a href="#waitlist">Privacy</a></div><p className="neo-disclaimer">Brands displayed are for informational reference only and do not imply official partnership.</p></footer>
+    <footer className="neo-footer neo-shell"><div><a href="#top" className="neo-logo"><img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-8 w-auto" /></a><p>Fair access to premium things.</p></div><div><b>PRODUCT</b><a href="#how">How it works</a><a href="#services">Browse slots</a></div><div><b>TRUST</b><a href="#trust">Protection</a><a href="#faq">FAQ</a></div><div><b>LEGAL</b><a href="#waitlist">Terms</a><a href="#waitlist">Privacy</a></div><p className="neo-disclaimer">Brands displayed are for informational reference only and do not imply official partnership.</p></footer>
   </main>
 }
