@@ -2,7 +2,6 @@
 
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Mark } from './stickers'
 import { ProfileMenu } from './profile-menu'
 import { NeoButton } from './ui'
 
@@ -39,9 +38,8 @@ export function Header({
   return (
     <header className="border-b-2 border-ink bg-paper">
       <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-8 sm:py-4">
-        <a href="#top" className="flex items-center gap-2.5 outline-none focus-visible:ring-4 focus-visible:ring-ink/30" aria-label="Splitza home">
-          <Mark className="size-10" />
-          <span className="font-display-tight text-2xl font-black">splitza</span>
+        <a href="#top" className="flex items-center gap-2 outline-none focus-visible:ring-4 focus-visible:ring-ink/30" aria-label="Splitza home">
+          <img src="/logos/splitza-dashboard-logo.png" alt="Splitza" className="h-[48px] w-auto shrink-0" aria-hidden="true" />
         </a>
 
         <nav

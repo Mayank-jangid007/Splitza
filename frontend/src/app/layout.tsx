@@ -38,6 +38,12 @@ export const metadata: Metadata = {
     "subscription pooling India",
     "Splitza",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
   openGraph: {
     title: "Splitza — Split Any Subscription",
     description: "India's first automated subscription-sharing marketplace with escrow protection.",

@@ -23,5 +23,5 @@ export function Brand({
       </span>
       <span className="text-xl font-extrabold tracking-tight">Splitza</span>
     </Link>
-  )
+  );
 }
