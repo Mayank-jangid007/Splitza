@@ -250,6 +250,8 @@ export async function handleGetMyPools(
         planDays: p.planDays ?? p.planMonths * 30,
         monthlyPlanCost: p.customPricePerMonth != null ? Number(p.customPricePerMonth) : undefined,
         startDate: p.startDate?.toISOString(),
+        joinedAt: m.joinedAt.toISOString(),
+        createdAt: p.createdAt.toISOString(),
         role: m.role, // "HOST" | "MEMBER"
         inviteUrl:
           m.role === "HOST"

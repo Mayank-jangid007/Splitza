@@ -17,6 +17,7 @@ import {
 import type { MarketplacePool } from '@/components/marketplace-view'
 import { poolsApi, type MarketplacePoolItem } from '@/lib/api'
 import { SeatDots } from './home-pool-card'
+import { useReveal } from '@/components/reveal'
 import { Burst, Flower, Sparkle } from './stickers'
 import { Chip, NeoButton, PlatformLogo, inputClass } from './ui'
 import { JoinFlow } from './pool-detail-dialog'
@@ -91,6 +92,8 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
   const [livePools, setLivePools] = useState<MarketPool[]>([])
   const [liveLoading, setLiveLoading] = useState(true)
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set())
+  const topRevealRef = useReveal<HTMLDivElement>()
+  const listRevealRef = useReveal<HTMLDivElement>([liveLoading, filter])
 
   useEffect(() => {
     let cancelled = false
@@ -155,8 +158,10 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
 
   return (
     <div className="space-y-10">
+      <div ref={topRevealRef} className="space-y-10">
       <section
         aria-labelledby="market-title"
+        data-reveal
         className="relative overflow-hidden rounded-[32px] border-2 border-ink bg-sky p-6 shadow-neo-lg sm:p-10"
       >
         <div className="grid-bg pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
@@ -177,7 +182,7 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
         </div>
       </section>
 
-      <section aria-label="Search and filter pools" className="space-y-5">
+      <section aria-label="Search and filter pools" data-reveal className="space-y-5">
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2"
@@ -240,8 +245,9 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
           })}
         </div>
       </section>
+      </div>
 
-      <section aria-live="polite" aria-label="Marketplace pools">
+      <section ref={listRevealRef} aria-live="polite" aria-label="Marketplace pools">
         {liveLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label="Loading marketplace">
             {[0, 1, 2].map((i) => (
@@ -290,6 +296,7 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
               return (
                 <li
                   key={pool.id}
+                  data-reveal
                   className="neo-press group relative flex flex-col gap-4 rounded-3xl border-2 border-ink bg-paper p-5 shadow-neo"
                 >
                   <div className="flex items-start gap-3">

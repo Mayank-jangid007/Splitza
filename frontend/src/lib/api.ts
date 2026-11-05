@@ -257,6 +257,8 @@ export type Pool = {
   planDays?: number;
   monthlyPlanCost?: number;
   startDate?: string;
+  joinedAt?: string;
+  createdAt?: string;
   role?: "HOST" | "MEMBER"; // actual role of the current user in this pool
   inviteUrl?: string; // host-only shareable invite link
 };

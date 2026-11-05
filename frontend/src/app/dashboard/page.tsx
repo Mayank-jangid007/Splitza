@@ -46,10 +46,19 @@ const LOGO_MAP: Record<string, string> = {
   canva: "https://cdn.simpleicons.org/canva/00C4CC",
 };
 
+/**
+ * The countdown must start from the moment the current user created or joined
+ * the pool — not from `pool.startDate`, which is only set once the pool fills.
+ */
+function poolStartDate(p: ApiPool): string | undefined {
+  if (p.role === "HOST") return p.createdAt ?? p.startDate;
+  return p.joinedAt ?? p.startDate ?? p.createdAt;
+}
+
 function apiPoolToUIPool(p: ApiPool): Pool {
   const poolName = p.name || p.platformName || "Platform Plan";
   const logoKey = Object.keys(LOGO_MAP).find((k) => poolName.toLowerCase().includes(k));
-  const { daysLeft, totalDays, endsOn } = getPlanLifespan(p.planMonths, p.startDate, p.planDays);
+  const { daysLeft, totalDays, endsOn } = getPlanLifespan(p.planMonths, poolStartDate(p), p.planDays);
   return {
     id: p.id,
     name: poolName,
@@ -72,7 +81,7 @@ function apiPoolToUIPool(p: ApiPool): Pool {
 
 function apiPoolToSplitzaPool(p: ApiPool): SplitzaPool {
   const poolName = p.name || p.platformName || "Platform Plan";
-  const { daysLeft, totalDays } = getPlanLifespan(p.planMonths, p.startDate, p.planDays);
+  const { daysLeft, totalDays } = getPlanLifespan(p.planMonths, poolStartDate(p), p.planDays);
   return {
     id: p.id,
     name: poolName,
