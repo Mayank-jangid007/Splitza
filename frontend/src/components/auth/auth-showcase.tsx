@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const isSignIn = mode === 'sign-in'
@@ -9,21 +10,21 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-10 w-auto" />
       </Link>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <h2 className="max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl">
+      <div className={cn('flex flex-col gap-6', !isSignIn && 'items-center text-center')}>
+        <div className="flex w-full flex-col gap-3">
+          <h2 className={cn('max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl', !isSignIn && 'mx-auto')}>
             {isSignIn
               ? 'Welcome back to your pools.'
               : 'Split subscriptions, not the bill.'}
           </h2>
-          <p className="max-w-sm text-base font-medium text-foreground/75 text-pretty">
+          <p className={cn('max-w-sm text-base font-medium text-foreground/75 text-pretty', !isSignIn && 'mx-auto')}>
             {isSignIn
               ? 'Pick up where you left off. Your seats, invites and payouts are right where you left them.'
               : 'Join a shared plan or share your own. Everyone pays their fair slice, safely held in escrow.'}
           </p>
         </div>
 
-        <div className="relative mx-auto w-full max-w-sm md:mx-0">
+        <div className={cn('relative w-full max-w-sm', isSignIn ? 'mx-auto md:mx-0' : 'mx-auto')}>
           <div
             aria-hidden="true"
             className="absolute inset-0 translate-x-2 translate-y-2 rounded-3xl border-2 border-foreground bg-foreground"
