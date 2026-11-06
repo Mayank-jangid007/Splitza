@@ -32,12 +32,12 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           <div className="relative overflow-hidden rounded-3xl border-2 border-foreground bg-card">
             <Image
               src="/illustrations/signin-hero.png"
-              alt="Friends cheering beside an open door with a golden ticket and a pink key"
-              width={1024}
-              height={1024}
+              alt="Illustrated character with sunglasses working on a laptop beside a locked browser window"
+              width={1200}
+              height={800}
               priority
               sizes="(min-width: 768px) 384px, 90vw"
-              className="aspect-square w-full object-cover"
+              className="h-auto w-full"
             />
           </div>
         </div>
