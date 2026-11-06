@@ -11,7 +11,7 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       </Link>
 
       <div className={cn('flex flex-col gap-6', !isSignIn && 'flex-1 justify-start')}>
-        <div className="flex w-full flex-col gap-3">
+        <div className="flex w-full flex-col gap-3 mb-16">
           <h2 className="max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl">
             {isSignIn
               ? 'Welcome back to your pools.'
@@ -29,15 +29,14 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             aria-hidden="true"
             className="absolute inset-0 translate-x-2 translate-y-2 rounded-3xl border-2 border-foreground bg-foreground"
           />
-          <div className="relative overflow-hidden rounded-3xl border-2 border-foreground bg-card">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-2 border-foreground bg-card">
             <Image
               src="/illustrations/auth-hero.png"
               alt="Illustrated character with sunglasses working on a laptop beside a locked browser window"
-              width={1200}
-              height={800}
+              fill
               priority
               sizes="(min-width: 768px) 384px, 90vw"
-              className="h-auto w-full"
+              className="object-cover"
             />
           </div>
         </div>
