@@ -4,7 +4,7 @@ import Link from 'next/link'
 export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const isSignIn = mode === 'sign-in'
   return (
-    <aside className="bg-dots relative flex flex-col justify-between gap-8 overflow-hidden border-b-2 border-foreground bg-sun p-6 sm:p-10 md:border-b-0 md:border-r-2">
+    <aside className="bg-dots relative flex h-full flex-col justify-between gap-8 overflow-hidden border-b-2 border-foreground bg-sun p-6 sm:p-10 md:border-b-0 md:border-r-2">
       <Link href="/" aria-label="Splitza home">
         <img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-10 w-auto" />
       </Link>
