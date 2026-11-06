@@ -31,7 +31,7 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           />
           <div className="relative overflow-hidden rounded-3xl border-2 border-foreground bg-card">
             <Image
-              src="/illustrations/signin-hero.png"
+              src="/illustrations/auth-hero.png"
               alt="Illustrated character with sunglasses working on a laptop beside a locked browser window"
               width={1200}
               height={800}
