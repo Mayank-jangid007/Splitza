@@ -10,7 +10,7 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-10 w-auto" />
       </Link>
 
-      <div className={cn('flex flex-col gap-6', !isSignIn && 'items-center text-center')}>
+      <div className={cn('flex flex-col gap-6', !isSignIn && 'flex-1 items-center justify-center text-center')}>
         <div className="flex w-full flex-col gap-3">
           <h2 className={cn('max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl', !isSignIn && 'mx-auto')}>
             {isSignIn
