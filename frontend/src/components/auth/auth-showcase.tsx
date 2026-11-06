@@ -10,14 +10,14 @@ export function AuthShowcase({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <img src="/logos/splitza-logo-white.png" alt="Splitza" className="h-10 w-auto" />
       </Link>
 
-      <div className={cn('flex flex-col gap-6', !isSignIn && 'flex-1 items-center justify-center pb-16 text-center')}>
+      <div className={cn('flex flex-col gap-6', !isSignIn && 'flex-1 justify-start')}>
         <div className="flex w-full flex-col gap-3">
-          <h2 className={cn('max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl', !isSignIn && 'mx-auto')}>
+          <h2 className="max-w-md text-4xl font-extrabold leading-[1.05] tracking-tight text-balance lg:text-5xl">
             {isSignIn
               ? 'Welcome back to your pools.'
               : 'Split subscriptions, not the bill.'}
           </h2>
-          <p className={cn('max-w-sm text-base font-medium text-foreground/75 text-pretty', !isSignIn && 'mx-auto')}>
+          <p className="max-w-sm text-base font-medium text-foreground/75 text-pretty">
             {isSignIn
               ? 'Pick up where you left off. Your seats, invites and payouts are right where you left them.'
               : 'Join a shared plan or share your own. Everyone pays their fair slice, safely held in escrow.'}
