@@ -44,7 +44,6 @@ export function Home({
         <Header
           view={view}
           onView={handleView}
-          onShare={handleShare}
           userName={userName}
           email={email}
           avatarUrl={avatarUrl}

@@ -1,9 +1,7 @@
 'use client'
 
-import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ProfileMenu } from './profile-menu'
-import { NeoButton } from './ui'
 
 export type View = 'pools' | 'market'
 
@@ -15,7 +13,6 @@ const NAV: { id: View; label: string }[] = [
 export function Header({
   view,
   onView,
-  onShare,
   userName,
   email,
   avatarUrl,
@@ -26,7 +23,6 @@ export function Header({
 }: {
   view: View
   onView: (v: View) => void
-  onShare: () => void
   userName: string
   email: string
   avatarUrl?: string | null
@@ -66,13 +62,6 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-3">
-          <NeoButton tone="sun" size="sm" onClick={onShare} className="hidden sm:inline-flex">
-            <Plus className="size-4" strokeWidth={3.5} />
-            Share a plan
-          </NeoButton>
-          <NeoButton tone="sun" size="sm" onClick={onShare} className="size-10 px-0 sm:hidden" aria-label="Share a plan">
-            <Plus className="size-5" strokeWidth={3.5} />
-          </NeoButton>
           <ProfileMenu
             name={userName}
             email={email}
