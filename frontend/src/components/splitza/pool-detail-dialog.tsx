@@ -20,13 +20,13 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
   credentialsFor,
-  isValidUpi,
   planDurationLabel,
   rupee,
   type MarketPool,
 } from '@/lib/splitza'
 import { poolsApi, type PoolCredentials } from '@/lib/api'
-import { Chip, Field, NeoButton, NeoDialog, PlatformLogo, inputClass } from './ui'
+import { Chip, NeoButton, NeoDialog, PlatformLogo } from './ui'
+import { QrPay } from './qr-pay'
 
 type Step = 'review' | 'pay' | 'lock' | 'creds'
 const STEP_ORDER: Step[] = ['review', 'pay', 'lock', 'creds']
@@ -89,8 +89,6 @@ function JoinBody({
   onLockChange: (locked: boolean) => void
 }) {
   const [step, setStep] = useState<Step>('review')
-  const [upi, setUpi] = useState('')
-  const [touched, setTouched] = useState(false)
   const [reveal, setReveal] = useState(false)
   const [copied, setCopied] = useState<'user' | 'pass' | null>(null)
   const [joinedCreds, setJoinedCreds] = useState<PoolCredentials | null>(null)
@@ -104,7 +102,6 @@ function JoinBody({
   const days = pool.durationDays ?? pool.durationMonths * 30
   const planCost = pool.pricePerSeat * pool.seats
   const openSeats = Math.max(pool.seats - pool.filled, 0)
-  const upiOk = isValidUpi(upi)
   const fullMonth = days === pool.durationMonths * 30
 
   useEffect(() => {
@@ -285,44 +282,12 @@ function JoinBody({
       )}
 
       {step === 'pay' && (
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setTouched(true)
-            if (upiOk) setStep('lock')
-          }}
-          noValidate
-        >
-          <div className="flex items-center justify-between rounded-2xl border-2 border-ink bg-sun p-4">
-            <span className="text-xs font-bold uppercase tracking-wider">Pay now</span>
-            <span className="font-display-tight text-3xl font-black">{rupee(pool.pricePerSeat)}</span>
-          </div>
-          <Field
-            label="Your UPI ID"
-            htmlFor="join-upi"
-            hint="Example: david@okbank"
-            error={touched && !upiOk ? 'Enter a valid UPI ID like name@bank to continue.' : undefined}
-          >
-            <input
-              id="join-upi"
-              value={upi}
-              onChange={(e) => setUpi(e.target.value)}
-              placeholder="name@bank"
-              autoComplete="off"
-              aria-invalid={touched && !upiOk}
-              className={inputClass}
-            />
-          </Field>
-          <div className="flex gap-3">
-            <NeoButton type="button" tone="paper" onClick={() => setStep('review')}>
-              Back
-            </NeoButton>
-            <NeoButton type="submit" className="flex-1">
-              Pay {rupee(pool.pricePerSeat)}
-            </NeoButton>
-          </div>
-        </form>
+        <QrPay
+          poolId={pool.id}
+          amount={pool.pricePerSeat}
+          onBack={() => setStep('review')}
+          onPaid={() => setStep('lock')}
+        />
       )}
 
       {step === 'lock' && (
