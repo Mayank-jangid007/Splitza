@@ -18,7 +18,6 @@ import type { MarketplacePool } from '@/components/marketplace-view'
 import { poolsApi, type MarketplacePoolItem } from '@/lib/api'
 import { SeatDots } from './home-pool-card'
 import { useReveal } from '@/components/reveal'
-import { Burst, Flower, Sparkle } from './stickers'
 import { Chip, NeoButton, PlatformLogo, inputClass } from './ui'
 import { JoinFlow } from './pool-detail-dialog'
 
@@ -159,92 +158,102 @@ export function Marketplace({ onCreatePlan, onJoin, onDone }: MarketplaceProps) 
   return (
     <div className="space-y-10">
       <div ref={topRevealRef} className="space-y-10">
-      <section
-        aria-labelledby="market-title"
-        data-reveal
-        className="relative overflow-hidden rounded-[32px] border-2 border-ink bg-sky p-6 shadow-neo-lg sm:p-10"
-      >
-        <div className="grid-bg pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
-        <Flower className="animate-spin-slow absolute -right-10 -top-10 size-44 sm:size-60" fill="#f8d56b" petals={10} face />
-        <Burst className="animate-float absolute bottom-6 right-24 hidden size-20 sm:block" fill="#f5aee3" />
-        <Sparkle className="animate-float absolute bottom-10 right-8 size-10" fill="#fffdf8" />
-        <div className="relative max-w-2xl">
-          <Chip tone="paper" className="mb-4">
-            <BadgeCheck className="size-3.5" strokeWidth={3} /> Marketplace Hub
-          </Chip>
-          <h1 id="market-title" className="font-display-tight text-4xl font-black sm:text-6xl">
-            Find an open seat.
-          </h1>
-          <p className="mt-4 max-w-lg text-sm leading-relaxed sm:text-base">
-            {openSeatsTotal} seats are open across public pools right now. Pick one, pay by UPI, and your money
-            stays locked in escrow until the plan is live.
-          </p>
-        </div>
-      </section>
-
-      <section aria-label="Search and filter pools" data-reveal className="space-y-5">
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2"
-            strokeWidth={3}
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by pool or platform name"
-            aria-label="Search pools"
-            className={cn(inputClass, 'h-14 pl-12 text-base')}
-          />
-        </div>
-
-        <div
-          role="group"
-          aria-label="Filter by category"
-          className="-mx-1 flex gap-3 overflow-x-auto px-1 pt-1.5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        <section
+          aria-labelledby="market-title"
+          data-reveal
+          className="relative overflow-hidden rounded-[32px] border-2 border-ink bg-sky p-6 shadow-neo-lg sm:p-10"
         >
-          {CATEGORIES.map((item) => {
-            const active = filter === item
-            const style = FILTER_STYLES[item]
-            const Icon = style.icon
-            const count = countFor(item)
-            return (
-              <button
-                key={item}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setFilter(item)}
-                className={cn(
-                  'flex shrink-0 items-center gap-2.5 rounded-full border-[2.5px] border-ink py-1.5 pr-3 pl-1.5 font-bold transition-all duration-150',
-                  active
-                    ? cn(style.bg, 'translate-x-[2px] translate-y-[2px] shadow-[0_0_0_0_var(--ink)]')
-                    : 'bg-white shadow-brut-sm hover:-translate-y-0.5 hover:shadow-brut',
-                  count === 0 && !active && 'opacity-60',
-                )}
-              >
-                <span
+          <div className="grid-bg pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+          <div className="relative grid items-center gap-6 sm:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="max-w-2xl">
+              <Chip tone="paper" className="mb-4">
+                <BadgeCheck className="size-3.5" strokeWidth={3} /> Marketplace Hub
+              </Chip>
+              <h1 id="market-title" className="font-display-tight text-4xl font-black sm:text-6xl">
+                Find an open seat.
+              </h1>
+              <p className="mt-4 max-w-lg text-sm leading-relaxed sm:text-base">
+                {openSeatsTotal} seats are open across public pools right now. Pick one, pay by UPI, and your money
+                stays locked in escrow until the plan is live.
+              </p>
+            </div>
+            <div className="relative mx-auto w-full max-w-[320px] sm:mx-0 sm:max-w-none">
+              <Image
+                src="/illustrations/marketplace-ticket.png"
+                alt="Illustrated purple ticket with a sofa, sparkles and clouds"
+                width={1000}
+                height={512}
+                priority
+                sizes="(min-width: 1024px) 380px, (min-width: 640px) 320px, 90vw"
+                className="h-auto w-full object-contain"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section aria-label="Search and filter pools" data-reveal className="space-y-5">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2"
+              strokeWidth={3}
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by pool or platform name"
+              aria-label="Search pools"
+              className={cn(inputClass, 'h-14 pl-12 text-base')}
+            />
+          </div>
+
+          <div
+            role="group"
+            aria-label="Filter by category"
+            className="-mx-1 flex gap-3 overflow-x-auto px-1 pt-1.5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {CATEGORIES.map((item) => {
+              const active = filter === item
+              const style = FILTER_STYLES[item]
+              const Icon = style.icon
+              const count = countFor(item)
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setFilter(item)}
                   className={cn(
-                    'grid size-8 place-items-center rounded-full border-2 border-ink transition-colors',
-                    active ? 'bg-white' : style.bg,
+                    'flex shrink-0 items-center gap-2.5 rounded-full border-[2.5px] border-ink py-1.5 pr-3 pl-1.5 font-bold transition-all duration-150',
+                    active
+                      ? cn(style.bg, 'translate-x-[2px] translate-y-[2px] shadow-[0_0_0_0_var(--ink)]')
+                      : 'bg-white shadow-brut-sm hover:-translate-y-0.5 hover:shadow-brut',
+                    count === 0 && !active && 'opacity-60',
                   )}
                 >
-                  <Icon className="size-4" aria-hidden="true" />
-                </span>
-                {item}
-                <span
-                  className={cn(
-                    'grid min-w-6 place-items-center rounded-full px-1.5 py-0.5 font-mono text-xs',
-                    active ? 'bg-ink text-cream' : 'bg-ink/10 text-ink',
-                  )}
-                >
-                  {count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
+                  <span
+                    className={cn(
+                      'grid size-8 place-items-center rounded-full border-2 border-ink transition-colors',
+                      active ? 'bg-white' : style.bg,
+                    )}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                  </span>
+                  {item}
+                  <span
+                    className={cn(
+                      'grid min-w-6 place-items-center rounded-full px-1.5 py-0.5 font-mono text-xs',
+                      active ? 'bg-ink text-cream' : 'bg-ink/10 text-ink',
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
       </div>
 
       <section ref={listRevealRef} aria-live="polite" aria-label="Marketplace pools">
