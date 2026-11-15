@@ -10,6 +10,7 @@ import {
   getMe,
   updateMe,
   changePassword,
+  acceptConsent,
 } from "../controllers/auth";
 import { googleCallback } from "../controllers/googleAuth";
 import { authenticate } from "../middleware/auth";
@@ -24,6 +25,7 @@ router.post("/refresh", refreshToken);
 router.post("/logout", logout);
 router.get("/me", authenticate, getMe);
 router.patch("/me", authenticate, updateMe);
+router.post("/accept-consent", authenticate, acceptConsent);
 router.post("/change-password", authenticate, changePassword);
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────

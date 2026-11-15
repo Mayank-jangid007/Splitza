@@ -7,24 +7,27 @@ import {
   handleUpdatePoolVisibility,
   handleDeletePool,
 } from "../controllers/pools.controller";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireConsent } from "../middleware/auth";
 
 const router = Router();
 
+// Every pool action requires a logged-in user who accepted the current terms.
+router.use(authenticate, requireConsent);
+
 // Host creates a pool
-router.post("/", authenticate, handleCreatePool);
+router.post("/", handleCreatePool);
 
 // Get my pools (must be before /:poolId routes)
-router.get("/my", authenticate, handleGetMyPools);
+router.get("/my", handleGetMyPools);
 
 // Member joins a pool (mock UPI collect → ACTIVE)
-router.post("/:poolId/join", authenticate, handleJoinPool);
+router.post("/:poolId/join", handleJoinPool);
 
 // Decrypt & return credentials (host or ACTIVE member only)
-router.get("/:poolId/credentials", authenticate, handleGetPoolCredentials);
+router.get("/:poolId/credentials", handleGetPoolCredentials);
 
 // Host-only pool controls
-router.patch("/:poolId", authenticate, handleUpdatePoolVisibility);
-router.delete("/:poolId", authenticate, handleDeletePool);
+router.patch("/:poolId", handleUpdatePoolVisibility);
+router.delete("/:poolId", handleDeletePool);
 
 export default router;

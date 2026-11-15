@@ -1,16 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Lock, Mail, Phone, User, Loader2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { ApiError } from '@/lib/api'
+import { LEGAL_VERSION } from '@/lib/legal-content'
 import { TextField } from './text-field'
 import { neoFocus, neoLift } from '@/lib/dashboard/neo'
 import { cn } from '@/lib/utils'
 
-export default function RegisterForm() {
+export default function RegisterForm({
+  agreed,
+  onConsentBlocked,
+}: {
+  agreed: boolean
+  onConsentBlocked: () => void
+}) {
   const router = useRouter()
   const { register, user, accessToken, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -48,6 +54,7 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!agreed) { onConsentBlocked(); return }
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
@@ -59,6 +66,8 @@ export default function RegisterForm() {
         phone: form.phone || undefined,
         password: form.password,
         role: 'HOST',
+        acceptedTerms: true,
+        legalVersion: LEGAL_VERSION,
       })
       sessionStorage.setItem('splitza_otp_identifier', form.email)
       router.push('/auth/verify-otp')
@@ -141,16 +150,9 @@ export default function RegisterForm() {
         required
       />
 
-      <p className="text-xs font-medium text-foreground/70">
-        By creating an account you agree to our{' '}
-        <Link href="/terms" className={cn('font-bold underline decoration-2 underline-offset-4 hover:bg-sun', neoFocus)}>Terms</Link>{' '}
-        and{' '}
-        <Link href="/privacy" className={cn('font-bold underline decoration-2 underline-offset-4 hover:bg-sun', neoFocus)}>Privacy Policy</Link>.
-      </p>
-
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !agreed}
         className={cn(
           'mt-1 flex h-13 items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-peach px-5 text-base font-extrabold disabled:pointer-events-none disabled:opacity-70',
           neoLift,

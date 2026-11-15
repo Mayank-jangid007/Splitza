@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
+import { LEGAL_VERSION } from "../lib/legal";
 
 export type AuthRequest = Request;
 
@@ -36,6 +37,38 @@ export const authenticate = async (
     next();
   } catch {
     res.status(401).json({ success: false, message: "Invalid or expired token" });
+  }
+};
+
+/**
+ * Blocks authenticated API access until the user accepts the current legal version.
+ * Mount after `authenticate`. The accept-consent endpoint and auth routes stay exempt.
+ */
+export const requireConsent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+    const row = await prisma.userConsent.findFirst({
+      where: { userId: req.user.id, version: LEGAL_VERSION },
+      select: { id: true },
+    });
+    if (!row) {
+      res.status(403).json({
+        success: false,
+        code: "CONSENT_REQUIRED",
+        message: "Please accept the current terms to continue.",
+      });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
   }
 };
 

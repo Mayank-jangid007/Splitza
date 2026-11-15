@@ -119,7 +119,7 @@ const ROUTES: DashboardRoutes = {
 // Page component
 // ---------------------------------------------------------------------------
 export default function Dashboard() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, consent, logout } = useAuth();
   const router = useRouter();
   const userName = user?.name?.split(" ")[0] ?? "there";
   const userEmail = user?.email ?? "you@splitza.app";
@@ -136,6 +136,7 @@ export default function Dashboard() {
     const wantsMarket = params.get("view") === "market";
     const wantsCreate = params.get("create") === "1" || params.get("share") === "1";
     if (!wantsMarket && !wantsCreate) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (wantsMarket) setIsBrowsing(true);
     if (wantsCreate) setIsSharing(true);
     router.replace("/dashboard", { scroll: false });
@@ -160,11 +161,13 @@ export default function Dashboard() {
       router.push("/landing");
       return;
     }
-    if (user) {
+    // Wait until the consent gate has confirmed access; otherwise the API
+    // returns 403 CONSENT_REQUIRED and we're about to redirect anyway.
+    if (user && consent === true) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       void fetchPools();
     }
-  }, [loading, user, router, fetchPools]);
+  }, [loading, user, consent, router, fetchPools]);
 
   const handleLaunch = async (details: LaunchPlanDetails) => {
     const upi = details.hostUpiId?.trim() ?? "";

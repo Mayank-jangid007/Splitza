@@ -149,6 +149,8 @@ export const auth = {
     phone?: string;
     password: string;
     role: "HOST" | "COHOST";
+    acceptedTerms: boolean;
+    legalVersion: string;
   }) => request<AuthResponse>("/auth/register", { method: "POST", body: data, authenticated: false }),
 
   login: (email: string, password: string) =>
@@ -164,7 +166,10 @@ export const auth = {
 
   logout: () => request<{ success: boolean }>("/auth/logout", { method: "POST" }),
 
-  me: () => request<{ success: boolean; data: { user: User } }>("/auth/me"),
+  me: () => request<{ success: boolean; data: { user: User; consent: boolean } }>("/auth/me"),
+
+  acceptConsent: () =>
+    request<{ success: boolean; message: string }>("/auth/accept-consent", { method: "POST" }),
 
   refresh: () => request<{ success: boolean; data: { accessToken: string; user: User } }>(
     "/auth/refresh", { method: "POST", authenticated: false }
@@ -330,7 +335,7 @@ export const poolsApi = {
     if (params?.planMonths) qs.set("planMonths", String(params.planMonths));
     if (params?.hasOpenSeats) qs.set("hasOpenSeats", "true");
     const query = qs.toString();
-    return request<{ ok: boolean; data: MarketplacePoolItem[]; meta: any }>(
+    return request<{ ok: boolean; data: MarketplacePoolItem[]; meta: Record<string, unknown> }>(
       `/marketplace${query ? `?${query}` : ""}`,
       { authenticated: false }   // public endpoint — no JWT needed
     );

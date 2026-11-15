@@ -139,10 +139,26 @@ model User {
   raisedDisputes     Dispute[]          @relation("DisputeRaiser")
   auditLogs          AuditLog[]
   inviteLinks        InviteLink[]
+  consents           UserConsent[]
 
   @@index([email])
   @@index([phone])
   @@map("users")
+}
+
+// ─────────────────────────────────────────────
+//  LEGAL CONSENT  (append-only history)
+// ─────────────────────────────────────────────
+
+model UserConsent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version    String   @db.VarChar(32)
+  acceptedAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_consents")
 }
 
 // ─────────────────────────────────────────────

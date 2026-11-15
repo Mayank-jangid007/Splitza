@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Lock, Mail, User } from 'lucide-react'
+import { useState } from 'react'
 import { neoFocus, neoLift } from '@/lib/dashboard/neo'
 import { cn } from '@/lib/utils'
+import { LegalConsent } from './legal-consent'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 
@@ -38,6 +39,8 @@ function GithubMark() {
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const isSignIn = mode === 'sign-in'
+  const [agreed, setAgreed] = useState(false)
+  const [consentBlocked, setConsentBlocked] = useState(false)
 
   return (
     <section className="flex items-center justify-center px-5 py-10 sm:px-10">
@@ -82,11 +85,28 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </p>
         </div>
 
+        {!isSignIn && (
+          <LegalConsent
+            checked={agreed}
+            onCheckedChange={(v) => {
+              setAgreed(v)
+              setConsentBlocked(false)
+            }}
+            invalid={consentBlocked}
+          />
+        )}
+
         {/* Social buttons */}
         <div className="grid grid-cols-2 gap-3">
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/google`}
-            onClick={() => {
+            aria-disabled={!isSignIn ? !agreed : undefined}
+            onClick={(e) => {
+              if (!isSignIn && !agreed) {
+                e.preventDefault()
+                setConsentBlocked(true)
+                return
+              }
               const raw = new URLSearchParams(window.location.search).get('next')
               const safe = raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : null
               if (safe) sessionStorage.setItem('splitza_next', safe)
@@ -96,6 +116,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               'flex h-12 items-center justify-center gap-2.5 rounded-xl border-2 border-foreground bg-white text-sm font-bold',
               neoLift,
               neoFocus,
+              !isSignIn && !agreed && 'opacity-60',
             )}
           >
             <GoogleMark />
@@ -103,8 +124,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </a>
           <button
             type="button"
+            disabled={!isSignIn && !agreed}
+            onClick={() => {
+              if (!isSignIn && !agreed) setConsentBlocked(true)
+            }}
             className={cn(
-              'flex h-12 items-center justify-center gap-2.5 rounded-xl border-2 border-foreground bg-white text-sm font-bold',
+              'flex h-12 items-center justify-center gap-2.5 rounded-xl border-2 border-foreground bg-white text-sm font-bold disabled:opacity-60',
               neoLift,
               neoFocus,
             )}
@@ -122,7 +147,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </div>
 
         {/* Form — real logic from existing components */}
-        {isSignIn ? <LoginForm /> : <RegisterForm />}
+        {isSignIn ? (
+          <LoginForm />
+        ) : (
+          <RegisterForm agreed={agreed} onConsentBlocked={() => setConsentBlocked(true)} />
+        )}
 
         {/* Footer link */}
         <p className="text-center text-sm font-medium text-foreground/70">

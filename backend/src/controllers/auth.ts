@@ -5,6 +5,8 @@ import { AppError } from "../middleware/errorHandler";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../services/jwt";
 import { generateOtp, verifyOtp, sendOtp } from "../services/otp";
 import { AuthRequest } from "../middleware/auth";
+import { LEGAL_VERSION } from "../lib/legal";
+import { hasCurrentConsent, recordConsent } from "../lib/consent";
 
 const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
 
@@ -17,10 +19,14 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, email, phone, password, role = "MEMBER" } = req.body;
+    const { name, email, phone, password, role = "MEMBER", acceptedTerms, legalVersion } = req.body;
 
     if (!name || !email || !password) {
       throw new AppError("Name, email and password are required", 400);
+    }
+
+    if (acceptedTerms !== true || legalVersion !== LEGAL_VERSION) {
+      throw new AppError("You must accept the current Terms of Service and Privacy Policy", 400);
     }
 
     if (!["HOST", "MEMBER", "COHOST"].includes(role)) {
@@ -40,15 +46,21 @@ export const register = async (
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        phone: phone || null,
-        passwordHash: hashedPassword,
-        role: normalizedRole as "HOST" | "MEMBER",
-      },
-      select: { id: true, name: true, email: true, phone: true, role: true, upiId: true },
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          name,
+          email,
+          phone: phone || null,
+          passwordHash: hashedPassword,
+          role: normalizedRole as "HOST" | "MEMBER",
+        },
+        select: { id: true, name: true, email: true, phone: true, role: true, upiId: true },
+      });
+      await tx.userConsent.create({
+        data: { userId: created.id, version: LEGAL_VERSION },
+      });
+      return created;
     });
 
     // Generate and send OTP — always use email as identifier for consistency
@@ -251,10 +263,27 @@ export const getMe = async (
     });
     if (!user) throw new AppError("User not found", 404);
     const { passwordHash, ...safeUser } = user;
+    const consent = await hasCurrentConsent(user.id);
     res.json({
       success: true,
-      data: { user: { ...safeUser, hasPassword: Boolean(passwordHash) } },
+      data: { user: { ...safeUser, hasPassword: Boolean(passwordHash) }, consent },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/accept-consent
+// ---------------------------------------------------------------------------
+export const acceptConsent = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    await recordConsent(req.user!.id);
+    res.json({ success: true, message: "Consent recorded" });
   } catch (err) {
     next(err);
   }
